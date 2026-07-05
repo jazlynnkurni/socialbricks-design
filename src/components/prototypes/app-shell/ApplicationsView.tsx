@@ -16,6 +16,7 @@ import type { Application } from "@/lib/types/contract";
 import { APPLICATIONS_PATH, PEOPLE_PATH } from "./nav";
 import { StatusBadge } from "./StatusBadge";
 import { Pagination } from "./Pagination";
+import { TableSearch } from "./TableSearch";
 import motion from "./motion.module.css";
 
 const PAGE_SIZE = 25;
@@ -66,25 +67,25 @@ export function ApplicationsView({ filter }: { filter?: string }) {
   const [page, setPage] = useState(1);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Debounce the name search so filtering and the announcement settle after
-  // typing pauses.
+  // Debounce the search so filtering and the announcement settle after
+  // typing pauses. Store the trimmed original text so the empty state can
+  // echo it back; matching lowercases inline.
   useEffect(() => {
-    const timer = setTimeout(
-      () => setSearch(searchInput.trim().toLowerCase()),
-      250,
-    );
+    const timer = setTimeout(() => setSearch(searchInput.trim()), 150);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const searchFiltered = useMemo(
-    () =>
-      search
-        ? mockApplications.filter((a) =>
-            getPersonForApplication(a)?.fullName.toLowerCase().includes(search),
-          )
-        : mockApplications,
-    [search],
-  );
+  const searchFiltered = useMemo(() => {
+    if (!search) return mockApplications;
+    const q = search.toLowerCase();
+    return mockApplications.filter((a) => {
+      const person = getPersonForApplication(a);
+      return (
+        (person?.fullName.toLowerCase().includes(q) ?? false) ||
+        a.caseNumber.toLowerCase().includes(q)
+      );
+    });
+  }, [search]);
 
   const counts = PILLS.map(
     (pill) => searchFiltered.filter(FILTER_TESTS[pill.id]).length,
@@ -142,60 +143,53 @@ export function ApplicationsView({ filter }: { filter?: string }) {
       <h1 className="font-heading text-2xl font-semibold text-ink-900">
         Applications
       </h1>
-      <p className="mt-1 text-sm text-ink-600">
-        Every application assigned to you, {mockApplications.length} in total.
-      </p>
+      <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
+        <p className="text-sm text-ink-600">
+          Every application assigned to you, {mockApplications.length} in total.
+        </p>
+        <TableSearch
+          id="app-search"
+          label="Search"
+          placeholder="Name or case number"
+          value={searchInput}
+          onChange={(next) => {
+            setSearchInput(next);
+            setPage(1);
+          }}
+        />
+      </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <div
-          role="tablist"
-          aria-label="Filter applications"
-          className="flex flex-wrap gap-2"
-        >
-          {PILLS.map((pill, index) => {
-            const selected = pill.id === activeFilter;
-            const focusable = selected || (aliasActive && index === 0);
-            return (
-              <button
-                key={pill.id}
-                ref={(el) => {
-                  tabRefs.current[index] = el;
-                }}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                tabIndex={focusable ? 0 : -1}
-                onClick={() => selectFilter(index)}
-                onKeyDown={(event) => onTabKeyDown(event, index)}
-                className={
-                  "flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition-[transform,background-color,border-color] duration-[130ms] active:scale-[0.97] " +
-                  (selected
-                    ? "border-brand-700 bg-brand-700 text-surface-0"
-                    : "border-border bg-surface-0 text-ink-900 hover:bg-surface-50")
-                }
-              >
-                {pill.label} ({counts[index]})
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="ml-auto">
-          <label htmlFor="app-search" className="sr-only">
-            Search by name
-          </label>
-          <input
-            id="app-search"
-            type="search"
-            value={searchInput}
-            onChange={(event) => {
-              setSearchInput(event.target.value);
-              setPage(1);
-            }}
-            placeholder="Search by name"
-            className="h-9 w-56 rounded-lg border border-border bg-surface-0 px-3 text-sm text-ink-900 placeholder:text-ink-600"
-          />
-        </div>
+      <div
+        role="tablist"
+        aria-label="Filter applications"
+        className="mt-6 flex flex-wrap gap-2"
+      >
+        {PILLS.map((pill, index) => {
+          const selected = pill.id === activeFilter;
+          const focusable = selected || (aliasActive && index === 0);
+          return (
+            <button
+              key={pill.id}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              tabIndex={focusable ? 0 : -1}
+              onClick={() => selectFilter(index)}
+              onKeyDown={(event) => onTabKeyDown(event, index)}
+              className={
+                "flex h-9 items-center rounded-lg border px-3 text-sm font-medium transition-[transform,background-color,border-color] duration-[130ms] active:scale-[0.97] " +
+                (selected
+                  ? "border-brand-700 bg-brand-700 text-surface-0"
+                  : "border-border bg-surface-0 text-ink-900 hover:bg-surface-50")
+              }
+            >
+              {pill.label} ({counts[index]})
+            </button>
+          );
+        })}
       </div>
 
       {aliasActive && (
@@ -214,7 +208,7 @@ export function ApplicationsView({ filter }: { filter?: string }) {
       )}
 
       <div aria-live="polite" className="sr-only">
-        {rows.length} {rows.length === 1 ? "result" : "results"}
+        {rows.length} {rows.length === 1 ? "result" : "results"} shown
       </div>
 
       <div
@@ -313,7 +307,9 @@ export function ApplicationsView({ filter }: { filter?: string }) {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-ink-600">
-                  No applications match this view.
+                  {search
+                    ? `No applications match '${search}'. Try a different name or case number.`
+                    : "No applications match this view."}
                 </td>
               </tr>
             )}

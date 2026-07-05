@@ -118,12 +118,12 @@ export function RecentUploads() {
             upload.status === "confirmed" ? (
               <Link
                 href={`/prototypes/app-shell/review/${upload.id}`}
-                className={`${rowClass} transition-colors hover:bg-surface-50`}
+                className={`group ${rowClass} transition-colors hover:bg-surface-50`}
               >
                 <RowContent upload={upload} />
                 <ChevronRight
                   size={16}
-                  className="shrink-0 text-ink-600"
+                  className="shrink-0 text-ink-600 transition-transform duration-[130ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
                   aria-hidden="true"
                 />
               </Link>

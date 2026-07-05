@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TriangleAlert } from "lucide-react";
+import { ChevronRight, TriangleAlert } from "lucide-react";
 import {
   daysUntilDue,
   formatDueDate,
@@ -99,7 +99,7 @@ export function AttentionList() {
             <li key={item.key}>
               <Link
                 href={item.href}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-50"
+                className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-50"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-ink-900">
@@ -122,6 +122,11 @@ export function AttentionList() {
                   )}
                   {item.chip.label}
                 </span>
+                <ChevronRight
+                  size={16}
+                  aria-hidden="true"
+                  className="shrink-0 text-ink-600 transition-transform duration-[130ms] group-hover:translate-x-0.5 motion-reduce:transition-none"
+                />
               </Link>
             </li>
           ))}
