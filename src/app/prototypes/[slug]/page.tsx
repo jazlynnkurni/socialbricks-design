@@ -1,16 +1,13 @@
-import type { ComponentType } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prototypes } from "@/lib/prototypes";
-import { AppShell } from "@/components/prototypes/app-shell/AppShell";
 
-// Each prototype renders full-bleed and owns its whole viewport.
-const PROTOTYPE_COMPONENTS: Record<string, ComponentType> = {
-  "app-shell": AppShell,
-};
-
+// app-shell has its own explicit route (./app-shell/page.tsx); every other
+// registered prototype renders through here.
 export function generateStaticParams() {
-  return prototypes.map((proto) => ({ slug: proto.slug }));
+  return prototypes
+    .filter((proto) => proto.slug !== "app-shell")
+    .map((proto) => ({ slug: proto.slug }));
 }
 
 export default async function PrototypePage({
@@ -21,9 +18,6 @@ export default async function PrototypePage({
   const { slug } = await params;
   const proto = prototypes.find((p) => p.slug === slug);
   if (!proto) notFound();
-
-  const Prototype = PROTOTYPE_COMPONENTS[slug];
-  if (Prototype) return <Prototype />;
 
   // Registered but not yet implemented: show its metadata.
   return (
