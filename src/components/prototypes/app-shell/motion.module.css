@@ -1,0 +1,37 @@
+/* Shared entrance animations for the app shell. Kept in a CSS module so
+   Turbopack preserves the keyframes (Tailwind tree-shakes standalone
+   @keyframes out of the global sheet). Only transform and opacity move, and
+   everything is gated on prefers-reduced-motion. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Main content settling in on route change. */
+  .contentIn {
+    animation: contentIn var(--dur-base, 200ms) var(--ease-out, ease) both;
+  }
+  /* A tab panel or swapped list, a touch quicker and shorter throw. */
+  .panelIn {
+    animation: panelIn 180ms var(--ease-out, ease) both;
+  }
+}
+
+@keyframes contentIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

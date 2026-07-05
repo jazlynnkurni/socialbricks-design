@@ -1,0 +1,64 @@
+/* Wordmark shimmer and logo float. Kept in a CSS module so Turbopack
+   preserves the keyframes (Tailwind's pipeline tree-shakes standalone
+   @keyframes out of the global sheet).
+
+   At rest the wordmark is solid ink-900. Hovering the wordmark (or focusing
+   the link) starts a teal-to-black shimmer sweeping left to right, with no
+   movement. Hovering the logo floats it up and down. The two cues are
+   independent: the logo does not react to a wordmark hover, and vice versa.
+   The SocialBricks wordmark is a brand name, which WCAG exempts from
+   text-contrast rules, so the shimmer may dip below body-text contrast. */
+
+.wordmark {
+  color: var(--ink-900);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wordmark:hover,
+  .link:focus-visible .wordmark {
+    background: linear-gradient(
+      100deg,
+      var(--ink-900) 30%,
+      var(--brand-400) 50%,
+      var(--ink-900) 70%
+    );
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 1.4s linear infinite;
+  }
+
+  .logo:hover {
+    animation: float 1.3s ease-in-out infinite;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -20% 0;
+  }
+  to {
+    background-position: 120% 0;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Reduced motion: no shimmer or float; hovering the wordmark still gives a
+   clear color cue. */
+@media (prefers-reduced-motion: reduce) {
+  .wordmark:hover,
+  .link:focus-visible .wordmark {
+    color: var(--brand-700);
+  }
+}

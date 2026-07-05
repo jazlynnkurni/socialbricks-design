@@ -1,6 +1,13 @@
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prototypes } from "@/lib/prototypes";
+import { AppShell } from "@/components/prototypes/app-shell/AppShell";
+
+// Each prototype renders full-bleed and owns its whole viewport.
+const PROTOTYPE_COMPONENTS: Record<string, ComponentType> = {
+  "app-shell": AppShell,
+};
 
 export function generateStaticParams() {
   return prototypes.map((proto) => ({ slug: proto.slug }));
@@ -15,6 +22,10 @@ export default async function PrototypePage({
   const proto = prototypes.find((p) => p.slug === slug);
   if (!proto) notFound();
 
+  const Prototype = PROTOTYPE_COMPONENTS[slug];
+  if (Prototype) return <Prototype />;
+
+  // Registered but not yet implemented: show its metadata.
   return (
     <div className="flex flex-1 flex-col px-6 py-12">
       <header className="mx-auto w-full max-w-2xl">
@@ -31,10 +42,6 @@ export default async function PrototypePage({
           {proto.description}
         </p>
       </header>
-      <main className="mx-auto mt-12 w-full max-w-2xl flex-1">
-        {/* Render the prototype component for this slug here, imported from
-            src/components/prototypes/<slug>/ */}
-      </main>
     </div>
   );
 }

@@ -1,0 +1,46 @@
+/* Animation for LoadingSphere. Kept in a CSS module (not globals.css) so
+   Turbopack preserves the keyframes: Tailwind's pipeline tree-shakes
+   standalone @keyframes out of the global sheet. */
+
+.hi {
+  opacity: 0;
+  animation: sweep 1.2s ease-in-out infinite;
+}
+
+@keyframes sweep {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.95;
+  }
+  38% {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: stop the sweep, rest the light on the middle band, and
+   allow only a faint whole-sphere pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .hi {
+    animation: none;
+    opacity: 0;
+  }
+  .hiMid {
+    opacity: 0.85;
+  }
+  .sphere {
+    animation: restPulse 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes restPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}

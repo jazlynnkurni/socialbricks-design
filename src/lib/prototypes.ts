@@ -12,10 +12,10 @@ export interface PrototypeMeta {
 }
 
 export const prototypes: PrototypeMeta[] = [
-  // Example entry, uncomment when the first prototype lands:
-  // {
-  //   slug: "case-queue",
-  //   title: "Case Queue",
-  //   description: "Animated triage queue for a social worker caseload.",
-  // },
+  {
+    slug: "app-shell",
+    title: "App Shell",
+    description:
+      "Collapsible sidebar shell for the casework app. Spring motion, full keyboard support, WCAG 2.1 AA tokens.",
+  },
 ];
