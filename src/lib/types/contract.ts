@@ -92,3 +92,27 @@ export interface StaffUser {
   role: string;
   initials: string;
 }
+
+export type MessageDirection = "inbound" | "outbound";
+
+export interface Message {
+  id: string;
+  /** inbound = from the client, outbound = from the caseworker. */
+  direction: MessageDirection;
+  body: string;
+  /** ISO date-time. */
+  sentAt: string;
+  /** Set on outbound messages once delivered. */
+  delivered?: boolean;
+  /** True on the inbound message that the platform auto-sorted to this case. */
+  autoSorted?: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  personId: string;
+  applicationId: string;
+  messages: Message[];
+  /** Whether the latest inbound message has been read. */
+  read: boolean;
+}

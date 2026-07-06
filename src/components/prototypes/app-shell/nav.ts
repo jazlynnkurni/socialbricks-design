@@ -14,6 +14,7 @@ export const APP_SHELL_PATH = "/prototypes/app-shell";
 export const APPLICATIONS_PATH = `${APP_SHELL_PATH}/applications`;
 export const PEOPLE_PATH = `${APP_SHELL_PATH}/people`;
 export const DOCUMENTS_PATH = `${APP_SHELL_PATH}/documents`;
+export const COMMUNICATIONS_PATH = `${APP_SHELL_PATH}/communications`;
 
 export interface NavEntry {
   id: string;
@@ -61,7 +62,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Files,
         href: DOCUMENTS_PATH,
       },
-      { id: "communications", label: "Communications", icon: MessageSquare },
+      {
+        id: "communications",
+        label: "Communications",
+        icon: MessageSquare,
+        href: COMMUNICATIONS_PATH,
+      },
     ],
   },
   {

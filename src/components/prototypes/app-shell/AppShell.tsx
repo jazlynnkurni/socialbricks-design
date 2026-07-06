@@ -52,7 +52,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
       ? "people"
       : pathname?.includes("/documents")
         ? "documents"
-        : "dashboard";
+        : pathname?.includes("/communications")
+          ? "communications"
+          : "dashboard";
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeId = selectedId ?? routeId;
   const reduceMotion = useReducedMotion();
