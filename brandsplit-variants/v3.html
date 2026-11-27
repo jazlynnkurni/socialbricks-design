@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr — Sign in</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* ============================================================
+     v3 — EDITORIAL / GRAIN
+     Format is fixed: teal brand panel (left) + sign-in form (right).
+     Only layout + motion live here; everything else comes from tokens.css.
+     ============================================================ */
+
+  .screen {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---- LEFT: brand panel ------------------------------------ */
+  .brand {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(40px, 5vw, 72px);
+    color: #fff;
+    /* rich, layered teal */
+    background:
+      radial-gradient(120% 90% at 12% 8%, color-mix(in srgb, var(--teal) 68%, #fff 0%) 0%, transparent 55%),
+      radial-gradient(140% 120% at 88% 100%, var(--teal-deep) 0%, transparent 60%),
+      linear-gradient(155deg, var(--teal) 0%, var(--teal-deep) 62%, #1f4f4e 100%);
+  }
+
+  /* soft vignette so the deep corners read as printed ink */
+  .brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(130% 130% at 50% 30%, transparent 55%, rgba(12, 40, 39, .38) 100%);
+  }
+
+  /* paper grain / film noise — tiled SVG turbulence */
+  .grain {
+    position: absolute;
+    inset: -20%;
+    z-index: 2;
+    pointer-events: none;
+    opacity: .5;
+    mix-blend-mode: soft-light;
+  }
+
+  /* oversized sprout, bleeding off the bottom-left edge */
+  .sprout {
+    position: absolute;
+    left: -14%;
+    bottom: -18%;
+    width: 78%;
+    height: auto;
+    z-index: 0;
+    color: #fff;
+    opacity: .13;
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+    transition: transform .5s cubic-bezier(.22, .61, .36, 1);
+  }
+  .sprout path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .brand__top,
+  .brand__body,
+  .brand__foot { position: relative; z-index: 3; }
+
+  .wordmark-white { height: 30px; width: auto; display: block; }
+
+  /* the honest human line — large, tight, refined */
+  .lede {
+    font-weight: 600;
+    font-size: clamp(2.05rem, 3.5vw, 3.15rem);
+    line-height: 1.06;
+    letter-spacing: -0.028em;
+    max-width: 15ch;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede .ln {
+    display: block;
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise .9s cubic-bezier(.22, .61, .36, 1) forwards;
+  }
+  .lede .ln:nth-child(1) { animation-delay: .10s; }
+  .lede .ln:nth-child(2) { animation-delay: .24s; color: color-mix(in srgb, #fff 82%, var(--teal-tint)); }
+
+  .brand__sub {
+    margin: 20px 0 0;
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 34ch;
+    color: rgba(255, 255, 255, .82);
+    opacity: 0;
+    transform: translateY(14px);
+    animation: rise .9s cubic-bezier(.22, .61, .36, 1) .40s forwards;
+  }
+
+  .brand__foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: .82rem;
+    letter-spacing: .02em;
+    color: rgba(255, 255, 255, .68);
+    opacity: 0;
+    animation: fade 1s ease .7s forwards;
+  }
+  .brand__foot .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex: none; }
+
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  @keyframes fade { to { opacity: 1; } }
+
+  /* ---- RIGHT: sign-in form ---------------------------------- */
+  .form-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(28px, 5vw, 64px);
+    background: var(--paper);
+  }
+  .form {
+    width: 100%;
+    max-width: 384px;
+  }
+  .wordmark-black { height: 26px; width: auto; display: none; margin: 0 0 30px; }
+
+  .form h1 {
+    margin: 0 0 6px;
+    font-size: 1.42rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .form__hint { margin: 0 0 26px; font-size: .95rem; color: var(--ink-2); }
+
+  .field + .field { margin-top: 16px; }
+
+  .pw-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .pw-wrap { position: relative; }
+  .pw-wrap > input { padding-right: 68px; }
+  .pw-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 36px;
+    padding: 0 12px;
+    border: none;
+    background: transparent;
+    color: var(--teal-deep);
+    font-weight: 600;
+    font-size: .82rem;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .pw-toggle:hover { background: var(--teal-tint); }
+
+  .row-keep {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 22px;
+    font-size: .9rem;
+    color: var(--ink-2);
+  }
+  .row-keep input {
+    width: 20px; height: 20px;
+    accent-color: var(--teal-deep);
+    cursor: pointer;
+    flex: none;
+  }
+  .row-keep label { cursor: pointer; }
+
+  .btn-primary[aria-busy="true"] { filter: none; opacity: .82; cursor: progress; }
+
+  .or {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 18px 0;
+    color: var(--ink-3);
+    font-size: .82rem;
+  }
+  .or::before, .or::after {
+    content: "";
+    height: 1px;
+    background: var(--line);
+    flex: 1;
+  }
+
+  .sso-mark { width: 17px; height: 17px; }
+  .sso-mark path { fill: none; stroke: var(--teal-deep); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  .form__foot {
+    margin-top: 26px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  .forgot { font-size: .9rem; }
+  .support { font-size: .82rem; }
+
+  /* ---- responsive: stack, form first ------------------------ */
+  @media (max-width: 860px) {
+    .screen { grid-template-columns: 1fr; }
+    .form-pane { order: -1; min-height: 100vh; }
+    .brand {
+      min-height: 46vh;
+      padding: clamp(32px, 8vw, 48px);
+      gap: 28px;
+    }
+    .wordmark-black { display: block; }
+    .brand .wordmark-white { display: none; }
+    .brand__top { display: none; }
+    .sprout { width: 96%; left: -8%; bottom: -22%; }
+  }
+  @media (max-width: 420px) {
+    .lede { font-size: 1.9rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lede .ln, .brand__sub, .brand__foot { animation: none; opacity: 1; transform: none; }
+    .sprout { transition: none; }
+    .btn-primary { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <!-- reusable grain filter -->
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <filter id="paperGrain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0"/>
+    </filter>
+  </svg>
+
+  <main class="screen">
+
+    <!-- ============ LEFT: brand panel ============ -->
+    <section class="brand" aria-label="Fostr">
+      <!-- grain overlay -->
+      <svg class="grain" aria-hidden="true" preserveAspectRatio="none">
+        <rect width="100%" height="100%" filter="url(#paperGrain)"/>
+      </svg>
+
+      <!-- oversized sprout, bleeding off the edge (from fostr-logo.svg) -->
+      <svg class="sprout" viewBox="112 122 34 22" aria-hidden="true" data-parallax>
+        <path d="M128.571 140V131.952C127.175 129.999 121.029 125.903 116 127.619"/>
+        <path d="M128.571 131.952C130.899 129.222 137.79 125.698 141.143 127.485"/>
+      </svg>
+
+      <div class="brand__top">
+        <img class="wordmark-white" src="fostr-wordmark-white.png" alt="Fostr" />
+      </div>
+
+      <div class="brand__body">
+        <h2 class="lede">
+          <span class="ln">Every child's story,</span>
+          <span class="ln">kept in one steady place.</span>
+        </h2>
+        <p class="brand__sub">The case moves fast and the record shouldn't fight you. Sign in, and it's all where you left it.</p>
+      </div>
+
+      <div class="brand__foot">
+        <span class="dot" aria-hidden="true"></span>
+        <span>Records handled with care, for the people who carry them.</span>
+      </div>
+    </section>
+
+    <!-- ============ RIGHT: sign-in form ============ -->
+    <section class="form-pane">
+      <form class="form" novalidate autocomplete="on">
+        <img class="wordmark-black" src="fostr-wordmark-black.png" alt="Fostr" />
+
+        <h1>Sign in</h1>
+        <p class="form__hint">Welcome back. Pick up where you left off.</p>
+
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username"
+                 inputmode="text" placeholder="you@agency.gov" autocapitalize="none" />
+        </div>
+
+        <div class="field">
+          <div class="pw-label">
+            <label for="password">Password</label>
+          </div>
+          <div class="pw-wrap">
+            <input id="password" name="password" type="password" autocomplete="current-password"
+                   placeholder="Your password" />
+            <button type="button" class="pw-toggle" data-toggle aria-pressed="false"
+                    aria-controls="password">Show</button>
+          </div>
+        </div>
+
+        <div class="row-keep">
+          <input id="keep" type="checkbox" />
+          <label for="keep">Keep me signed in</label>
+        </div>
+
+        <button type="submit" class="btn-primary" data-submit>Sign in</button>
+
+        <div class="or">or</div>
+
+        <button type="button" class="btn-ghost" data-sso>
+          <svg class="sso-mark" viewBox="112 122 34 22" aria-hidden="true">
+            <path d="M128.571 140V131.952C127.175 129.999 121.029 125.903 116 127.619"/>
+            <path d="M128.571 131.952C130.899 129.222 137.79 125.698 141.143 127.485"/>
+          </svg>
+          Sign in with agency SSO
+        </button>
+
+        <div class="form__foot">
+          <a class="link forgot" href="#" data-forgot>Forgot password?</a>
+          <span class="support muted">Trouble signing in? Ask your agency admin.</span>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // ---- Show / hide password ----
+    const toggle = document.querySelector('[data-toggle]');
+    const pw = document.getElementById('password');
+    toggle.addEventListener('click', () => {
+      const showing = pw.type === 'text';
+      pw.type = showing ? 'password' : 'text';
+      toggle.textContent = showing ? 'Show' : 'Hide';
+      toggle.setAttribute('aria-pressed', String(!showing));
+      pw.focus({ preventScroll: true });
+    });
+
+    // ---- Sign in (no server; brief busy state) ----
+    const form = document.querySelector('.form');
+    const submit = document.querySelector('[data-submit]');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (submit.getAttribute('aria-busy') === 'true') return;
+      const label = submit.textContent;
+      submit.setAttribute('aria-busy', 'true');
+      submit.disabled = true;
+      submit.textContent = 'Signing in…';
+      setTimeout(() => {
+        submit.textContent = label;
+        submit.disabled = false;
+        submit.removeAttribute('aria-busy');
+      }, 1400);
+    });
+
+    document.querySelector('[data-sso]').addEventListener('click', () => {
+      /* would hand off to the agency identity provider */
+    });
+    document.querySelector('[data-forgot]').addEventListener('click', (e) => e.preventDefault());
+
+    // ---- Soft parallax drift on the oversized sprout ----
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const sprout = document.querySelector('[data-parallax]');
+    if (!reduce && sprout) {
+      const brand = document.querySelector('.brand');
+      let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
+
+      function apply() {
+        cx += (tx - cx) * 0.06;
+        cy += (ty - cy) * 0.06;
+        sprout.style.transform = `translate3d(${cx.toFixed(2)}px, ${cy.toFixed(2)}px, 0)`;
+        if (Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1) {
+          raf = requestAnimationFrame(apply);
+        } else { raf = null; }
+      }
+      function nudge(nx, ny) {
+        tx = nx; ty = ny;
+        if (!raf) raf = requestAnimationFrame(apply);
+      }
+
+      // pointer parallax (very subtle)
+      window.addEventListener('pointermove', (e) => {
+        const r = brand.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        nudge(px * 26, py * 20);
+      }, { passive: true });
+
+      // gentle idle drift so it breathes even without input
+      let t = 0;
+      setInterval(() => {
+        if (raf) return;              // don't fight pointer motion
+        t += 0.02;
+        nudge(Math.sin(t) * 7, Math.cos(t * 0.8) * 5);
+      }, 60);
+    }
+  </script>
+</body>
+</html>

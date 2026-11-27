@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr — Sidebar v4 · Minimal Sections</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* ── v4 "Minimal Sections": calm, text-forward, editorial ── */
+
+  .app {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    height: 100dvh;
+    min-height: 100%;
+  }
+
+  /* ── Sidebar shell ── */
+  .side {
+    --w: 264px;
+    width: var(--w);
+    background: var(--paper);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px 14px;
+    gap: 4px;
+    transition: width .42s cubic-bezier(.22,.61,.36,1), padding .42s cubic-bezier(.22,.61,.36,1);
+    overflow: hidden;
+  }
+  .side.collapsed { --w: 74px; padding-left: 12px; padding-right: 12px; }
+
+  /* ── Brand row ── */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 2px 8px 4px;
+    min-height: var(--tap);
+  }
+  .brand__mark { width: 26px; height: 26px; flex: 0 0 auto; display: block; }
+  .brand__word {
+    height: 15px; width: auto; display: block;
+    opacity: 1;
+    transition: opacity .28s ease;
+  }
+  .side.collapsed .brand__word { opacity: 0; }
+
+  /* ── Nav groups ── */
+  .nav { margin-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+
+  .group { padding-top: 12px; }
+  .group + .group {
+    margin-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .group__label {
+    padding: 4px 10px 8px;
+    white-space: nowrap;
+    transition: opacity .24s ease, height .3s ease, padding .3s ease;
+    height: 22px;
+    overflow: hidden;
+  }
+  .side.collapsed .group__label {
+    opacity: 0;
+    height: 8px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* ── Nav item ── */
+  .item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--ink-2);
+    transition: background-color .2s ease, color .2s ease;
+  }
+  .item:hover { background: var(--line-2); }
+  .item:hover .item__icon { color: var(--ink); }
+
+  /* leading teal dot — only visible when active */
+  .item__dot {
+    position: absolute;
+    left: -2px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    transform: scale(0);
+    opacity: 0;
+    transition: transform .18s ease, opacity .18s ease;
+  }
+  .item.active .item__dot {
+    opacity: 1;
+    animation: dotpop .42s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes dotpop {
+    0%   { transform: scale(0); }
+    60%  { transform: scale(1.5); }
+    100% { transform: scale(1); }
+  }
+
+  .item__icon {
+    flex: 0 0 auto;
+    width: 20px; height: 20px;
+    color: var(--ink-3);
+    transition: color .2s ease, transform .2s ease;
+  }
+  .item:hover .item__icon { transform: translateX(1px); }
+
+  .item__label {
+    font-size: .905rem;
+    font-weight: 500;
+    letter-spacing: -0.006em;
+    white-space: nowrap;
+    transition: opacity .24s ease;
+  }
+  .side.collapsed .item__label { opacity: 0; }
+  .side.collapsed .item { justify-content: flex-start; }
+
+  /* active state — teal icon + teal label, no pill */
+  .item.active { color: var(--teal-deep); }
+  .item.active .item__icon { color: var(--teal); transform: none; }
+  .item.active .item__label { font-weight: 600; }
+  .item.active:hover { background: var(--line-2); }
+
+  /* ── Footer ── */
+  .foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 6px 8px;
+    min-height: var(--tap);
+    border-radius: 9px;
+  }
+  .avatar {
+    flex: 0 0 auto;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--teal-tint);
+    color: var(--teal-deep);
+    display: grid; place-items: center;
+    font-size: .8rem; font-weight: 600;
+    letter-spacing: .01em;
+  }
+  .user__meta { min-width: 0; line-height: 1.25; transition: opacity .24s ease; }
+  .user__name { font-size: .86rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .user__role { font-size: .72rem; color: var(--ink-3); white-space: nowrap; }
+  .side.collapsed .user__meta,
+  .side.collapsed .logout { opacity: 0; pointer-events: none; }
+
+  .logout {
+    margin-left: auto;
+    flex: 0 0 auto;
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    border: 0; background: transparent;
+    color: var(--ink-3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color .2s ease, background-color .2s ease;
+  }
+  .logout:hover { color: var(--ink); background: var(--line-2); }
+
+  /* ── Collapse toggle ── */
+  .toggle {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 8px 10px;
+    border: 0;
+    background: transparent;
+    border-radius: 9px;
+    color: var(--ink-3);
+    cursor: pointer;
+    font-size: .78rem;
+    font-weight: 500;
+    transition: color .2s ease, background-color .2s ease;
+  }
+  .toggle:hover { color: var(--ink-2); background: var(--line-2); }
+  .toggle__chev { flex: 0 0 auto; width: 18px; height: 18px; transition: transform .42s cubic-bezier(.22,.61,.36,1); }
+  .side.collapsed .toggle__chev { transform: rotate(180deg); }
+  .toggle__text { white-space: nowrap; transition: opacity .24s ease; }
+  .side.collapsed .toggle__text { opacity: 0; }
+
+  /* ── Content mock ── */
+  .content { position: relative; overflow: auto; }
+  .topbar {
+    position: sticky; top: 0;
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 26px 34px 18px;
+    background: linear-gradient(var(--canvas) 72%, transparent);
+  }
+  .topbar h1 { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); }
+  .topbar .crumb { color: var(--ink-3); font-size: .82rem; }
+  .canvas { min-height: calc(100% - 90px); padding: 6px 34px 40px; }
+  .sheet {
+    height: 62vh; min-height: 340px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--paper);
+    display: grid; place-items: center;
+  }
+  .sheet .hint { color: var(--ink-3); font-size: .86rem; }
+  .sheet .dot-inner { width: 100%; height: 100%; border-radius: 16px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ══ Sidebar ══ -->
+  <nav class="side" id="side" aria-label="Primary">
+    <div class="brand">
+      <img class="brand__mark" src="fostr-logo.svg" alt="Fostr" />
+      <img class="brand__word" src="fostr-wordmark-black.png" alt="Fostr" />
+    </div>
+
+    <div class="nav">
+      <!-- Daily work -->
+      <div class="group">
+        <div class="eyebrow group__label">Daily work</div>
+        <button class="item" data-label="Dashboard">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span class="item__label">Dashboard</span>
+        </button>
+      </div>
+
+      <!-- Case work -->
+      <div class="group">
+        <div class="eyebrow group__label">Case work</div>
+        <button class="item active" aria-current="page" data-label="Fieldbook">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4a2 2 0 0 1-2-2Z"/><path d="M22 15V6a2 2 0 0 0-2-2h-1"/><path d="m16 2 4 4"/><path d="M18.4 9.6a2 2 0 0 1 3 3L17 17l-4 1 1-4Z"/></svg>
+          <span class="item__label">Fieldbook</span>
+        </button>
+        <button class="item" data-label="Review queue">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+          <span class="item__label">Review queue</span>
+        </button>
+        <button class="item" data-label="Search case history">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span class="item__label">Search case history</span>
+        </button>
+      </div>
+
+      <!-- Court-ready -->
+      <div class="group">
+        <div class="eyebrow group__label">Court-ready</div>
+        <button class="item" data-label="Verify a seal">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z"/><path d="m9 12 2 2 4-4"/></svg>
+          <span class="item__label">Verify a seal</span>
+        </button>
+      </div>
+
+      <!-- Reports -->
+      <div class="group">
+        <div class="eyebrow group__label">Reports</div>
+        <button class="item" data-label="Reporting">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="12" width="3" height="5" rx="1"/><rect x="12" y="8" width="3" height="9" rx="1"/><rect x="17" y="5" width="3" height="12" rx="1"/></svg>
+          <span class="item__label">Reporting</span>
+        </button>
+        <button class="item" data-label="Exports">
+          <span class="item__dot" aria-hidden="true"></span>
+          <svg class="item__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          <span class="item__label">Exports</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="foot">
+      <div class="user">
+        <div class="avatar" aria-hidden="true">JH</div>
+        <div class="user__meta">
+          <div class="user__name">Jaden Hinton</div>
+          <div class="user__role">Caseworker</div>
+        </div>
+        <button class="logout" title="Log out" aria-label="Log out">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+
+      <button class="toggle" id="toggle" title="Collapse sidebar" aria-label="Collapse sidebar" aria-expanded="true">
+        <svg class="toggle__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        <span class="toggle__text">Collapse</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ Content ══ -->
+  <main class="content">
+    <div class="topbar">
+      <h1 id="page-title">Fieldbook</h1>
+      <span class="crumb">Case work</span>
+    </div>
+    <div class="canvas">
+      <div class="sheet dotgrid">
+        <div class="dot-inner dotgrid" style="display:grid;place-items:center;">
+          <span class="hint">Fieldbook content</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const side = document.getElementById('side');
+  const items = Array.from(document.querySelectorAll('.item'));
+  const pageTitle = document.getElementById('page-title');
+  const crumb = document.querySelector('.crumb');
+  const groupLabels = { }; // resolved per click
+
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      if (item.classList.contains('active')) return;
+      items.forEach(i => {
+        i.classList.remove('active');
+        i.removeAttribute('aria-current');
+        // restart dot animation cleanly next time
+        const d = i.querySelector('.item__dot');
+        d.style.animation = 'none';
+      });
+      item.classList.add('active');
+      item.setAttribute('aria-current', 'page');
+      // force reflow so the dot-pop keyframe re-runs
+      const dot = item.querySelector('.item__dot');
+      void dot.offsetWidth;
+      dot.style.animation = '';
+
+      const label = item.dataset.label;
+      pageTitle.textContent = label;
+      const grp = item.closest('.group')?.querySelector('.group__label');
+      crumb.textContent = grp ? grp.textContent : '';
+    });
+  });
+
+  const toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', () => {
+    const collapsed = side.classList.toggle('collapsed');
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    toggle.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  });
+</script>
+</body>
+</html>

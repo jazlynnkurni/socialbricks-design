@@ -1,0 +1,54 @@
+/* Shared Brand-Split layout + form. Every motion variant links this so the ONLY
+   difference between them is the .brand .motion layer. */
+.shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 1.05fr 1fr; }
+
+/* LEFT — teal brand panel. Base gradient here; each variant fills .motion. */
+.brand {
+  position: relative; overflow: hidden; isolation: isolate; color: #fff;
+  padding: clamp(40px, 5vw, 72px);
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: linear-gradient(160deg, var(--teal) 0%, var(--teal-deep) 82%);
+}
+.brand .motion { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.brand__top, .brand__body { position: relative; z-index: 2; }
+.brand__top img { height: 30px; width: auto; }
+.brand__line { max-width: 15ch; margin: 0; font-size: clamp(1.5rem, 2.6vw, 2.35rem); font-weight: 600; line-height: 1.22; letter-spacing: -0.02em; }
+.brand__sub { max-width: 32ch; margin: 18px 0 0; font-size: 0.95rem; line-height: 1.55; color: color-mix(in srgb, #fff 78%, transparent); }
+
+/* RIGHT — sign-in form */
+.signin { background: var(--paper); display: flex; align-items: center; justify-content: center; padding: clamp(28px, 4vw, 56px); }
+.formWrap { width: 100%; max-width: 360px; }
+.signinBrand { display: none; margin-bottom: 28px; }
+.signinBrand img { height: 26px; width: auto; }
+.signin h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
+.signin .hint { margin: 0 0 26px; font-size: 0.92rem; color: var(--ink-3); }
+.stack > .field { margin-bottom: 16px; }
+.labelRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.labelRow .link { font-size: 0.8rem; }
+.pwWrap { position: relative; }
+.pwWrap > input { padding-right: 58px; }
+.pwToggle { position: absolute; top: 0; right: 0; height: var(--tap); min-width: var(--tap); padding: 0 12px; border: none; background: transparent; cursor: pointer; color: var(--teal-deep); font-weight: 600; font-size: 0.82rem; border-radius: 11px; }
+.pwToggle:hover { color: var(--teal); }
+.remember { display: flex; align-items: center; gap: 10px; margin: 4px 0 22px; font-size: 0.9rem; color: var(--ink-2); cursor: pointer; user-select: none; min-height: 32px; }
+.remember input { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 0; flex: none; border: 1.5px solid var(--line); border-radius: 6px; background: #fff; cursor: pointer; position: relative; transition: .15s; }
+.remember input:checked { background: var(--teal); border-color: var(--teal); }
+.remember input:checked::after { content: ""; position: absolute; inset: 0; background: no-repeat center/12px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"); }
+.btn-primary { position: relative; }
+.btn-primary[aria-busy="true"] { opacity: .92; cursor: default; }
+.spin { display: none; width: 15px; height: 15px; margin-right: 9px; vertical-align: -2px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+.btn-primary[aria-busy="true"] .spin { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.or { display: flex; align-items: center; gap: 14px; margin: 20px 0; color: var(--ink-3); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.or::before, .or::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+.support { margin: 30px 0 0; padding-top: 20px; border-top: 1px solid var(--line); font-size: 0.85rem; color: var(--ink-3); }
+
+@media (max-width: 860px) {
+  .shell { grid-template-columns: 1fr; }
+  .signin { order: 1; min-height: 100vh; min-height: 100dvh; padding-top: 44px; padding-bottom: 44px; }
+  .brand { order: 2; min-height: 260px; padding: 40px; }
+  .brand__line { font-size: 1.5rem; max-width: 22ch; }
+  .brand__sub { display: none; }
+  .signinBrand { display: block; }
+  .formWrap { max-width: 400px; }
+}
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

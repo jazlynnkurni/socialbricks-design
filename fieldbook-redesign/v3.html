@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fostr Fieldbook — Andre Baptiste</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* v3 — UNIFIED TWO-PANE. One flat sheet split by a single hairline.
+     No cards, no panels, no boxed composer. Layout CSS only. */
+
+  .app { display: grid; grid-template-columns: 64px 1fr; min-height: 100vh; }
+
+  /* ---- slim left nav rail: quiet inline-SVG icons ---- */
+  .rail {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 18px 0; background: var(--paper); border-right: 1px solid var(--line);
+  }
+  .rail a {
+    width: var(--tap); height: var(--tap);
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px; color: var(--ink-3); text-decoration: none;
+  }
+  .rail a:hover { color: var(--ink-2); background: var(--line-2); }
+  .rail a.active { color: var(--teal-deep); background: var(--teal-tint); }
+  .rail a svg { width: 21px; height: 21px; display: block; }
+  .rail .spacer { flex: 1; }
+
+  /* ---- the single sheet ---- */
+  .sheet { background: var(--paper); display: flex; flex-direction: column; min-width: 0; }
+
+  /* top strip: worker + caseload counts */
+  .topstrip {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 34px; border-bottom: 1px solid var(--line); flex-wrap: wrap;
+  }
+  .topstrip .who { font-weight: 600; color: var(--ink); }
+  .topstrip .who small { color: var(--ink-3); font-weight: 400; margin-left: 8px; }
+  .topstrip .counts { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .topstrip .counts span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--fs-meta); }
+
+  /* the split: ONE surface divided by a subtle vertical hairline */
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) 1px minmax(0, 1fr);
+    flex: 1; min-height: 0;
+  }
+  .divider { background: var(--line); }
+
+  .record  { padding: 30px 40px 60px; overflow-y: auto; }
+  .writing { padding: 30px 40px 60px; overflow-y: auto; }
+
+  /* measure ~60-70ch on the record side */
+  .record > * { max-width: 66ch; }
+
+  /* case header — flat, no card */
+  .caseHead h1 { font-size: var(--fs-hero); font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .caseHead .sub { color: var(--ink-2); font-size: var(--fs-meta); }
+  .caseHead .statusline { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--ink-2); font-size: var(--fs-meta); }
+
+  /* AI summary — unboxed, quiet */
+  .ai { margin-top: 28px; }
+  .ai .eyebrow { display: block; margin-bottom: 8px; }
+  .ai p { margin: 0; color: var(--ink); line-height: 1.6; }
+
+  /* due tasks — minimal outline/text chips */
+  .tasks { margin-top: 26px; }
+  .tasks .eyebrow { display: block; margin-bottom: 10px; }
+  .taskrow { display: flex; align-items: center; gap: 9px; padding: 7px 0; color: var(--ink); font-size: var(--fs-body); }
+  .taskrow .dot { }
+
+  /* history — reverse-chron, airy */
+  .history { margin-top: 34px; }
+  .history .eyebrow { display: block; margin-bottom: 4px; }
+  .hitem { padding: 18px 0; border-top: 1px solid var(--line-2); }
+  .hitem:first-of-type { border-top: none; }
+
+  .visit .vhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .visit .vdate { font-weight: 600; }
+  .visit .vlabel { color: var(--ink-2); font-size: var(--fs-meta); }
+  .visit .current-tag { color: var(--teal-deep); font-size: var(--fs-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .visit .seal { margin-top: 8px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: var(--fs-micro); color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .visit .vfoot { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+  .visit .meter { }
+
+  .note .ntext { margin: 0; color: var(--ink); line-height: 1.6; }
+  .note .nmeta { margin-top: 7px; color: var(--ink-3); font-size: var(--fs-meta); }
+
+  /* ---- writing side: plain borderless composer on the same surface ---- */
+  .writing .eyebrow { display: block; }
+  .consent { margin-top: 6px; color: var(--ink-2); font-size: var(--fs-meta); line-height: 1.55; max-width: 60ch; }
+  .consent .rec { margin-left: 6px; }
+
+  .compose {
+    margin-top: 22px;
+    /* inline field: single baseline hairline at most, NO box */
+    border: none; background: none;
+  }
+  .compose .field {
+    display: block; width: 100%; min-height: 168px;
+    border: none; outline: none; resize: none; background: none;
+    font: inherit; color: var(--ink); line-height: 1.6; padding: 0;
+    border-bottom: 1px solid var(--line);   /* the single baseline */
+    padding-bottom: 14px;
+  }
+  .compose .field::placeholder { color: var(--ink-3); }
+
+  .controls { display: flex; align-items: center; gap: 4px; margin-top: 14px; }
+  .controls button {
+    width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: none; border-radius: 8px; color: var(--ink-2); font-size: 0.9rem;
+  }
+  .controls button:hover { background: var(--line-2); color: var(--ink); }
+  .controls button b { font-weight: 800; }
+  .controls button i { font-style: italic; }
+  .controls .sep { width: 1px; height: 20px; background: var(--line); margin: 0 6px; }
+
+  .helper { margin-top: 16px; color: var(--ink-3); font-size: var(--fs-meta); max-width: 56ch; line-height: 1.5; }
+
+  .saverow { margin-top: 20px; }
+  .save {
+    min-height: var(--tap); padding: 0 22px; border: none; border-radius: 999px;
+    background: var(--teal); color: #fff; font-weight: 600; font-size: var(--fs-body);
+  }
+  .save:hover { background: var(--teal-deep); }
+
+  /* iPad portrait: collapse to a single stacked column */
+  @media (max-width: 900px) {
+    .split { grid-template-columns: 1fr; }
+    .divider { display: none; }
+    .record { border-bottom: 1px solid var(--line); }
+    .record > * { max-width: none; }
+    .record, .writing { padding: 26px 28px 48px; }
+    .topstrip { padding: 14px 28px; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- slim left nav rail -->
+    <nav class="rail" aria-label="Primary">
+      <a href="#" class="active" title="Caseload" aria-label="Caseload">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </a>
+      <a href="#" title="People" aria-label="People">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 6.2a3 3 0 0 1 0 5.6M17.5 19a5.2 5.2 0 0 0-3-4.7"/></svg>
+      </a>
+      <a href="#" title="Records" aria-label="Records">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h6M9 16h6"/></svg>
+      </a>
+      <a href="#" title="Seals" aria-label="Seals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>
+      </a>
+      <div class="spacer"></div>
+      <a href="#" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+      </a>
+    </nav>
+
+    <!-- the one sheet -->
+    <div class="sheet">
+      <div class="topstrip">
+        <div class="who">Jaden Hinton <small>Caseworker</small></div>
+        <div class="counts" id="counts"></div>
+      </div>
+
+      <div class="split">
+        <!-- LEFT: the case record, flat flowing content -->
+        <section class="record" aria-label="Case record">
+          <div class="caseHead" id="caseHead"></div>
+          <div class="ai" id="ai"></div>
+          <div class="tasks" id="tasks"></div>
+          <div class="history" id="history"></div>
+        </section>
+
+        <!-- the single hairline that splits the sheet -->
+        <div class="divider" aria-hidden="true"></div>
+
+        <!-- RIGHT: the writing side, no panel, no box -->
+        <section class="writing" aria-label="Write a note">
+          <span class="eyebrow">New note</span>
+          <p class="consent" id="consent"></p>
+
+          <div class="compose">
+            <textarea class="field" id="composeField"></textarea>
+            <div class="controls" aria-label="Formatting">
+              <button type="button" title="Bold"><b>B</b></button>
+              <button type="button" title="Italic"><i>I</i></button>
+              <span class="sep"></span>
+              <button type="button" title="List">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+              </button>
+            </div>
+            <p class="helper" id="helper"></p>
+            <div class="saverow"><button type="button" class="save">Save note</button></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script>
+    (function () {
+      var F = window.FOSTR, O = F.open;
+      var esc = function (s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; };
+
+      // caseload counts as .count badges
+      var c = F.counts;
+      var countDefs = [
+        ["All", c.all, "queue"],
+        ["Review", c.review, "review"],
+        ["Queue", c.queue, "queue"],
+        ["Done", c.done, "done"],
+        ["Safety", c.safety, "safety"]
+      ];
+      document.getElementById("counts").innerHTML = countDefs.map(function (d) {
+        return '<span><span class="dot ' + d[2] + '"></span>' + d[0] + ' <span class="count">' + d[1] + '</span></span>';
+      }).join("");
+
+      // case header
+      document.getElementById("caseHead").innerHTML =
+        '<h1>' + esc(O.name) + '</h1>' +
+        '<div class="sub">' + O.age + ' · ' + esc(O.care) + ' · ' + esc(O.caseId) + '</div>' +
+        '<div class="statusline"><span class="dot ' + O.status + '"></span>' + esc(O.statusLabel) + '</div>';
+
+      // AI summary — unboxed
+      document.getElementById("ai").innerHTML =
+        '<span class="eyebrow">AI summary</span><p>' + esc(O.aiSummary) + '</p>';
+
+      // due tasks
+      document.getElementById("tasks").innerHTML =
+        '<span class="eyebrow">Due now</span>' +
+        O.tasks.map(function (t) {
+          return '<div class="taskrow"><span class="dot review"></span>' + esc(t) + '</div>';
+        }).join("");
+
+      // history — reverse-chron
+      document.getElementById("history").innerHTML =
+        '<span class="eyebrow">Case history</span>' +
+        O.history.map(function (h) {
+          if (h.kind === "visit") {
+            var head = '<div class="vhead">' +
+              '<span class="vdate">' + esc(h.date) + '</span>' +
+              '<span class="dot ' + h.status + '"></span>' +
+              '<span class="vlabel">' + esc(h.statusLabel) + '</span>' +
+              (h.current ? '<span class="current-tag">Open</span>' : '') +
+              '</div>';
+            var seal = "";
+            if (h.sealed) {
+              seal = '<div class="seal"><span>sealed ' + esc(h.sealed) + '</span><span>' + esc(h.sor) + '</span>' +
+                (h.delivered ? '<span>delivered</span>' : '') + '</div>';
+            }
+            var foot = '<div class="vfoot">';
+            if (h.meter != null) {
+              var pct = Math.round((h.meter / 7) * 100);
+              foot += '<span class="meter"><i style="width:' + pct + '%"></i></span>';
+            }
+            if (h.amend) { foot += '<button class="tbtn" type="button">Amend record</button>'; }
+            foot += '</div>';
+            return '<div class="hitem visit">' + head + seal + foot + '</div>';
+          } else {
+            return '<div class="hitem note">' +
+              '<p class="ntext">' + esc(h.text) + '</p>' +
+              '<div class="nmeta">' + esc(h.noteType) + ' · ' + esc(h.author) + ' · ' + esc(h.date) + '</div>' +
+              '</div>';
+          }
+        }).join("");
+
+      // composer text
+      var cm = O.composer;
+      document.getElementById("consent").innerHTML =
+        esc(cm.consent) + '<a href="#" class="tbtn rec">Record consent</a>';
+      document.getElementById("composeField").setAttribute("placeholder", cm.placeholder);
+      document.getElementById("helper").textContent = cm.helper;
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fostr Sidebar — Rail → Expand (spring)</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* ---- v1: RAIL → EXPAND (spring). Only layout + motion here; brand from tokens.css ---- */
+  :root{
+    --rail-collapsed: 76px;
+    --rail-expanded: 262px;
+    --spring: cubic-bezier(.34,1.32,.5,1);   /* gentle overshoot */
+    --ease: cubic-bezier(.4,0,.2,1);
+    --pad-x: 14px;
+    --item-h: 48px;
+    --sect-h: 30px;
+    --radius: 12px;
+  }
+
+  .frame{ display:flex; min-height:100vh; }
+
+  /* aside reserves the layout width (real collapse reflows content) */
+  .rail{
+    flex:0 0 auto;
+    width: var(--rail-collapsed);
+    position:relative;
+    transition: width .42s var(--spring);
+  }
+  .rail[data-open="true"]{ width: var(--rail-expanded); }
+
+  /* the panel is absolutely placed so HOVER-PEEK can overlay content without reflow */
+  .panel{
+    position:absolute; inset:0;
+    width: var(--rail-collapsed);
+    display:flex; flex-direction:column;
+    background: var(--paper);
+    border-right:1px solid var(--line);
+    overflow:hidden;
+    transition: width .42s var(--spring), box-shadow .3s var(--ease);
+    z-index:5;
+  }
+  .rail[data-open="true"] .panel{ width: var(--rail-expanded); }
+  /* peek: only when collapsed and hovered, grow the panel over content */
+  .rail[data-open="false"]:hover .panel,
+  .rail[data-open="false"]:focus-within .panel{
+    width: var(--rail-expanded);
+    box-shadow: 22px 0 48px -28px rgba(31,39,37,.28);
+  }
+  .rail[data-open="false"] .panel[data-peekable="false"]{ width: var(--rail-collapsed); box-shadow:none; }
+
+  /* a state class the JS flips so labels/wordmark react to peek OR real-open */
+  .panel.is-showing .label,
+  .panel.is-showing .sect-text,
+  .panel.is-showing .foot-meta{ opacity:1; transform:none; }
+  .panel.is-showing .mark-icon{ opacity:0; transform:scale(.9); }
+  .panel.is-showing .mark-word{ opacity:1; transform:none; }
+  .panel.is-showing .sect-dot{ opacity:0; }
+  .panel.is-showing .toggle{ transform: rotate(180deg); }
+
+  /* ---- header / brand ---- */
+  .head{
+    height:74px; flex:0 0 auto;
+    display:flex; align-items:center;
+    padding: 0 var(--pad-x);
+    position:relative;
+  }
+  .mark{ position:relative; height:40px; display:flex; align-items:center; min-width:0; }
+  .mark-icon{
+    position:absolute; left:0; top:50%; width:40px; height:40px; margin-top:-20px;
+    border-radius:11px; overflow:hidden; display:block;
+    box-shadow: 0 1px 0 var(--line), 0 6px 16px -10px rgba(31,39,37,.5);
+    transition: opacity .3s var(--ease), transform .42s var(--spring);
+  }
+  .mark-icon img{ width:100%; height:100%; display:block; }
+  .mark-word{
+    height:26px; margin-left:2px;
+    opacity:0; transform: translateX(-8px);
+    transition: opacity .34s var(--ease) .06s, transform .42s var(--spring) .06s;
+    pointer-events:none;
+  }
+  .mark-word img{ height:100%; width:auto; display:block; }
+
+  .toggle{
+    position:absolute; top:50%; right:12px; margin-top:-16px;
+    width:32px; height:32px; border-radius:9px;
+    border:1px solid var(--line); background:var(--paper);
+    display:grid; place-items:center; cursor:pointer;
+    color:var(--ink-2);
+    transition: transform .42s var(--spring), background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+  }
+  .toggle:hover{ background:var(--teal-tint); border-color:color-mix(in srgb, var(--teal) 30%, var(--line)); color:var(--teal-deep); }
+  /* in collapsed rest state, center the toggle under the mark area for a clean icon rail */
+  .rail[data-open="false"] .panel:not(.is-showing) .toggle{ opacity:0; }
+
+  /* ---- nav ---- */
+  .nav{
+    flex:1 1 auto; position:relative;
+    padding: 6px var(--pad-x) 10px;
+    overflow-y:auto; overflow-x:hidden;
+  }
+  /* the single shared moving indicator */
+  .indicator{
+    position:absolute; left:var(--pad-x); right:var(--pad-x);
+    height:var(--item-h);
+    border-radius:var(--radius);
+    background: var(--teal-tint);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 16%, transparent);
+    top:0; opacity:0;
+    transition: top .44s var(--spring), opacity .3s var(--ease);
+    z-index:0; pointer-events:none;
+  }
+  .indicator::before{ /* teal accent bar on the left of the active pill */
+    content:""; position:absolute; left:7px; top:50%; height:20px; width:3px; margin-top:-10px;
+    border-radius:3px; background:var(--teal);
+    transition: opacity .3s var(--ease);
+  }
+  .indicator.ready{ opacity:1; }
+
+  .group{ position:relative; z-index:1; }
+  .sect{ height:var(--sect-h); display:flex; align-items:center; padding: 0 8px; position:relative; }
+  .sect-text{
+    font-size:.64rem; letter-spacing:.13em; text-transform:uppercase; font-weight:600; color:var(--ink-3);
+    white-space:nowrap; opacity:0; transform: translateX(-6px);
+    transition: opacity .3s var(--ease), transform .4s var(--spring);
+  }
+  .sect-dot{ position:absolute; left:50%; top:50%; width:14px; height:2px; margin:-1px 0 0 -7px; border-radius:2px; background:var(--line); transition:opacity .25s var(--ease); }
+
+  .item{
+    position:relative; z-index:1;
+    display:flex; align-items:center; gap:12px;
+    width:100%; height:var(--item-h); min-height:var(--tap);
+    padding:0 8px; margin:2px 0;
+    border:0; background:transparent; cursor:pointer; text-align:left;
+    border-radius:var(--radius); color:var(--ink-2);
+    transition: color .2s var(--ease), background .2s var(--ease);
+  }
+  .item:hover{ color:var(--ink); }
+  .rail[data-open="false"] .panel:not(.is-showing) .item:hover{ background:var(--line-2); }
+  .ico{
+    flex:0 0 44px; width:44px; height:44px; margin-left:-6px;
+    display:grid; place-items:center; color:inherit;
+    transition: transform .38s var(--spring), color .2s var(--ease);
+  }
+  .ico svg{ width:21px; height:21px; }
+  .item:hover .ico{ transform: translateY(-1px) scale(1.06); }
+  .item[aria-current="page"]{ color:var(--teal-deep); }
+  .item[aria-current="page"] .ico{ color:var(--teal-deep); }
+  .item[aria-current="page"] .label{ font-weight:600; }
+  .label{
+    white-space:nowrap; font-size:.92rem;
+    opacity:0; transform: translateX(-8px);
+    transition: opacity .3s var(--ease), transform .42s var(--spring), font-weight .2s var(--ease);
+  }
+  /* stagger the reveal */
+  .item .label{ transition-delay: calc(var(--i,0) * 26ms); }
+  .sect .sect-text{ transition-delay: calc(var(--i,0) * 26ms); }
+
+  /* ---- footer ---- */
+  .foot{
+    flex:0 0 auto; border-top:1px solid var(--line);
+    padding:10px var(--pad-x); display:flex; align-items:center; gap:11px;
+    min-height: 64px;
+  }
+  .avatar{
+    flex:0 0 40px; width:40px; height:40px; border-radius:50%;
+    display:grid; place-items:center; font-weight:600; font-size:.82rem;
+    color:var(--teal-deep); background:var(--teal-tint);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 20%, transparent);
+  }
+  .foot-meta{
+    flex:1 1 auto; min-width:0;
+    display:flex; flex-direction:column; line-height:1.25;
+    opacity:0; transform: translateX(-8px);
+    transition: opacity .3s var(--ease) .04s, transform .42s var(--spring) .04s;
+  }
+  .foot-name{ font-size:.86rem; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .foot-role{ font-size:.72rem; color:var(--ink-3); }
+  .logout{
+    flex:0 0 auto; width:34px; height:34px; border-radius:9px;
+    display:grid; place-items:center; border:0; background:transparent; cursor:pointer;
+    color:var(--ink-3);
+    transition: background .18s var(--ease), color .18s var(--ease);
+  }
+  .logout:hover{ background:var(--line-2); color:var(--ink); }
+
+  /* ---- content mock ---- */
+  .content{ flex:1 1 auto; min-width:0; }
+  .page{ max-width:920px; padding: 40px clamp(20px,5vw,64px); }
+  .crumb{ margin-bottom:18px; }
+  .page h1{ font-size: clamp(1.5rem, 3.4vw, 2rem); margin:6px 0 8px; letter-spacing:-.01em; }
+  .page .lede{ color:var(--ink-2); margin:0 0 26px; max-width:60ch; }
+  .cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:16px;
+    min-height:104px; transition: transform .3s var(--spring), box-shadow .3s var(--ease), border-color .2s var(--ease);
+  }
+  .card:hover{ transform: translateY(-2px); box-shadow: 0 14px 30px -20px rgba(31,39,37,.35); border-color: color-mix(in srgb, var(--teal) 24%, var(--line)); }
+  .card .k{ font-size:.72rem; color:var(--ink-3); font-weight:600; letter-spacing:.04em; }
+  .card .v{ font-size:1.5rem; font-weight:600; margin-top:6px; color:var(--ink); }
+  .card .sub{ font-size:.8rem; color:var(--ink-2); margin-top:4px; }
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-size:.72rem; font-weight:600; color:var(--teal-deep); background:var(--teal-tint); padding:4px 10px; border-radius:999px; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration:.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="rail" data-open="false" aria-label="Primary">
+    <nav class="panel" aria-label="Fostr navigation">
+
+      <!-- brand + toggle -->
+      <div class="head">
+        <div class="mark">
+          <span class="mark-icon" aria-hidden="true"><img src="fostr-logo.svg" alt=""></span>
+          <span class="mark-word"><img src="fostr-wordmark-black.png" alt="Fostr"></span>
+        </div>
+        <button class="toggle" id="toggle" aria-expanded="false" aria-label="Expand sidebar" title="Expand sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+
+      <!-- nav -->
+      <div class="nav" id="nav">
+        <div class="indicator" id="indicator" aria-hidden="true"></div>
+
+        <div class="group">
+          <div class="sect"><span class="sect-text">Daily work</span><span class="sect-dot" aria-hidden="true"></span></div>
+          <button class="item" data-key="dashboard" title="Dashboard">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg></span>
+            <span class="label">Dashboard</span>
+          </button>
+        </div>
+
+        <div class="group">
+          <div class="sect"><span class="sect-text">Case work</span><span class="sect-dot" aria-hidden="true"></span></div>
+          <button class="item" data-key="fieldbook" aria-current="page" title="Fieldbook">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.4 8.6a2.1 2.1 0 0 0-3-3L11 13v3h3z"/><path d="M6 4h9a1 1 0 0 1 1 1v3"/><path d="M16 16v3a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5"/></svg></span>
+            <span class="label">Fieldbook</span>
+          </button>
+          <button class="item" data-key="review" title="Review queue">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg></span>
+            <span class="label">Review queue</span>
+          </button>
+          <button class="item" data-key="search" title="Search case history">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+            <span class="label">Search case history</span>
+          </button>
+        </div>
+
+        <div class="group">
+          <div class="sect"><span class="sect-text">Court-ready</span><span class="sect-dot" aria-hidden="true"></span></div>
+          <button class="item" data-key="verify" title="Verify a seal">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.4 3 8.5 7 9.7 4-1.2 7-5.3 7-9.7V6z"/><path d="m9 12 2 2 4-4"/></svg></span>
+            <span class="label">Verify a seal</span>
+          </button>
+        </div>
+
+        <div class="group">
+          <div class="sect"><span class="sect-text">Reports</span><span class="sect-dot" aria-hidden="true"></span></div>
+          <button class="item" data-key="reporting" title="Reporting">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v17a1 1 0 0 0 1 1h17"/><rect x="7" y="12" width="3" height="5" rx="1"/><rect x="12.5" y="8" width="3" height="9" rx="1"/><rect x="18" y="5" width="3" height="12" rx="1"/></svg></span>
+            <span class="label">Reporting</span>
+          </button>
+          <button class="item" data-key="exports" title="Exports">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/></svg></span>
+            <span class="label">Exports</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="foot">
+        <span class="avatar" aria-hidden="true">JH</span>
+        <span class="foot-meta">
+          <span class="foot-name">Jaden Hinton</span>
+          <span class="foot-role">Caseworker</span>
+        </span>
+        <button class="logout" title="Log out" aria-label="Log out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+
+    </nav>
+  </aside>
+
+  <!-- ============ CONTENT MOCK ============ -->
+  <main class="content dotgrid">
+    <div class="page">
+      <div class="crumb"><span class="eyebrow">Case work</span></div>
+      <h1>Fieldbook</h1>
+      <p class="lede">Your working record for the Alvarez matter. Capture visits, notes, and evidence here, then promote what's court-ready to a signed seal.</p>
+      <div class="cards">
+        <div class="card"><div class="k">Open entries</div><div class="v">12</div><div class="sub">3 need a signature</div></div>
+        <div class="card"><div class="k">Last visit</div><div class="v">Aug 14</div><div class="sub">Home visit logged</div></div>
+        <div class="card"><div class="k">Review queue</div><div class="v">4</div><div class="sub">Awaiting supervisor</div></div>
+        <div class="card"><div class="k">Status</div><div style="margin-top:8px"><span class="pill">On track</span></div><div class="sub">Next court date Sep 2</div></div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function(){
+  var rail = document.querySelector('.rail');
+  var panel = document.querySelector('.panel');
+  var toggle = document.getElementById('toggle');
+  var nav = document.getElementById('nav');
+  var indicator = document.getElementById('indicator');
+  var items = Array.prototype.slice.call(nav.querySelectorAll('.item'));
+
+  // stagger index for labels + section text (in DOM order)
+  var seq = Array.prototype.slice.call(nav.querySelectorAll('.sect-text, .item .label'));
+  seq.forEach(function(el, i){ el.style.setProperty('--i', i); });
+
+  function activeItem(){ return nav.querySelector('.item[aria-current="page"]') || items[0]; }
+
+  function moveIndicator(){
+    var el = activeItem();
+    indicator.style.top = el.offsetTop + 'px';
+    indicator.classList.add('ready');
+  }
+
+  // reveal state = real-open OR hover/focus peek while collapsed
+  function syncShowing(){
+    var open = rail.getAttribute('data-open') === 'true';
+    var peeking = !open && (rail.matches(':hover') || rail.contains(document.activeElement));
+    panel.classList.toggle('is-showing', open || peeking);
+  }
+
+  function setOpen(open){
+    rail.setAttribute('data-open', open ? 'true' : 'false');
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Collapse sidebar' : 'Expand sidebar');
+    toggle.setAttribute('title', open ? 'Collapse sidebar' : 'Expand sidebar');
+    syncShowing();
+  }
+
+  toggle.addEventListener('click', function(){
+    setOpen(rail.getAttribute('data-open') !== 'true');
+  });
+
+  items.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (btn.getAttribute('aria-current') === 'page') return;
+      items.forEach(function(b){ b.removeAttribute('aria-current'); });
+      btn.setAttribute('aria-current', 'page');
+      moveIndicator();
+    });
+  });
+
+  // peek listeners
+  ['mouseenter','mouseleave','focusin','focusout'].forEach(function(ev){
+    rail.addEventListener(ev, function(){ requestAnimationFrame(syncShowing); });
+  });
+
+  // keep indicator glued during width/reflow changes
+  window.addEventListener('resize', moveIndicator);
+  panel.addEventListener('transitionend', function(e){ if (e.propertyName === 'width') moveIndicator(); });
+
+  // init
+  window.addEventListener('load', function(){ moveIndicator(); syncShowing(); });
+  moveIndicator();
+})();
+</script>
+</body>
+</html>

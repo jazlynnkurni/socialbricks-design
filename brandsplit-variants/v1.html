@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr — Sign in</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* ---- Layout: the fixed Brand Split ---- */
+  .split {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* ---- LEFT: teal brand panel ---- */
+  .brand {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(2rem, 4.5vw, 4.25rem);
+    color: #fff;
+    background:
+      radial-gradient(120% 90% at 18% -10%, color-mix(in srgb, var(--teal) 82%, #fff 0%) 0%, transparent 55%),
+      linear-gradient(158deg, var(--teal) 0%, var(--teal-deep) 58%, #204f4e 100%);
+    isolation: isolate;
+  }
+  /* the drawn roots live full-bleed behind the type */
+  .roots {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .roots path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.5);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .roots .taproot { stroke: rgba(255, 255, 255, 0.62); }
+  .roots .hair    { stroke: rgba(255, 255, 255, 0.32); }
+
+  .brand__mark {
+    position: relative;
+    z-index: 2;
+    height: 30px;
+    width: auto;
+  }
+  .brand__body {
+    position: relative;
+    z-index: 2;
+    margin-top: auto;
+    max-width: 30ch;
+  }
+  .brand__line {
+    font-size: clamp(1.35rem, 2.5vw, 1.95rem);
+    font-weight: 500;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .brand__sub {
+    margin: 1rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  /* the small seed node where the taproot begins its idle sway */
+  .roots__sway {
+    transform-box: view-box;
+    transform-origin: 50% 22%;
+    animation: sway 9s ease-in-out 3.2s infinite;
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-0.6deg); }
+    50%      { transform: rotate(0.6deg); }
+  }
+
+  /* draw-in: each stroke reveals downward, staggered by inline delay */
+  .roots path {
+    stroke-dasharray: var(--len, 600);
+    stroke-dashoffset: var(--len, 600);
+    animation: draw 2.1s cubic-bezier(.65,.02,.28,1) forwards;
+    animation-delay: var(--delay, 0s);
+    opacity: 0;
+  }
+  @keyframes draw {
+    from { stroke-dashoffset: var(--len, 600); opacity: 0; }
+    5%   { opacity: 1; }
+    to   { stroke-dashoffset: 0; opacity: 1; }
+  }
+
+  /* ---- RIGHT: sign-in form ---- */
+  .form-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background: var(--paper);
+  }
+  .form-card { width: 100%; max-width: 380px; }
+
+  .form-card__mark { display: none; height: 26px; margin-bottom: 1.75rem; }
+
+  .form-card h1 {
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin: 0 0 0.35rem;
+  }
+  .form-card__intro { margin: 0 0 1.75rem; font-size: 0.94rem; color: var(--ink-2); }
+
+  form .field + .field { margin-top: 1rem; }
+
+  .pw-wrap { position: relative; }
+  .pw-wrap > input { padding-right: 68px; }
+  .pw-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 34px;
+    padding: 0 10px;
+    border: none;
+    background: transparent;
+    color: var(--teal-deep);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .pw-toggle:hover { background: var(--teal-tint); }
+
+  .row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1.1rem 0 1.4rem;
+    flex-wrap: wrap;
+  }
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.9rem;
+    color: var(--ink-2);
+    cursor: pointer;
+    min-height: var(--tap);
+  }
+  .check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--teal-deep);
+    cursor: pointer;
+  }
+  .forgot { font-size: 0.9rem; display: inline-flex; align-items: center; min-height: var(--tap); }
+
+  .btn-primary[aria-busy="true"] { filter: brightness(0.95); cursor: progress; }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 1.4rem 0;
+    color: var(--ink-3);
+    font-size: 0.8rem;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .support {
+    margin: 1.75rem 0 0;
+    font-size: 0.82rem;
+    color: var(--ink-3);
+    text-align: center;
+  }
+
+  /* ---- Responsive: collapse to single stacked, FORM FIRST ---- */
+  @media (max-width: 780px) {
+    .split { grid-template-columns: 1fr; }
+    .brand { order: 2; min-height: 320px; }
+    .form-pane { order: 1; padding-top: clamp(2.25rem, 8vw, 3rem); }
+    .form-card__mark { display: block; }
+    .brand__body { margin-top: 2.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .roots path {
+      animation: none;
+      stroke-dashoffset: 0;
+      opacity: 1;
+    }
+    .roots__sway { animation: none; }
+    .btn-primary { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="split">
+
+    <!-- LEFT: brand panel -->
+    <section class="brand" aria-label="Fostr">
+      <!-- Signature: a taproot system drawing itself downward -->
+      <svg class="roots" viewBox="0 0 600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <g class="roots__sway">
+          <!-- central taproot -->
+          <path class="taproot" style="--len:900; --delay:.15s" stroke-width="2.4"
+            d="M300 150 C 300 300, 292 420, 306 560 C 316 660, 300 760, 312 880" />
+
+          <!-- primary branches, left -->
+          <path style="--len:460; --delay:.9s" stroke-width="1.8"
+            d="M298 300 C 250 330, 214 372, 176 452 C 150 508, 138 556, 120 626" />
+          <path style="--len:380; --delay:1.25s" stroke-width="1.6"
+            d="M302 470 C 262 502, 232 540, 208 606 C 194 646, 190 686, 178 742" />
+
+          <!-- primary branches, right -->
+          <path style="--len:480; --delay:1.05s" stroke-width="1.8"
+            d="M304 360 C 356 388, 396 434, 428 512 C 452 570, 460 620, 470 700" />
+          <path style="--len:360; --delay:1.4s" stroke-width="1.6"
+            d="M308 560 C 348 592, 376 632, 396 700 C 408 742, 410 782, 416 838" />
+
+          <!-- fine root hairs -->
+          <path class="hair" style="--len:200; --delay:1.7s" stroke-width="1.1"
+            d="M176 452 C 150 470, 128 486, 96 500" />
+          <path class="hair" style="--len:200; --delay:1.85s" stroke-width="1.1"
+            d="M208 606 C 184 624, 164 636, 132 648" />
+          <path class="hair" style="--len:200; --delay:1.75s" stroke-width="1.1"
+            d="M428 512 C 456 528, 480 540, 512 552" />
+          <path class="hair" style="--len:200; --delay:1.95s" stroke-width="1.1"
+            d="M396 700 C 424 716, 448 726, 482 736" />
+          <path class="hair" style="--len:180; --delay:2.05s" stroke-width="1.1"
+            d="M306 560 C 284 574, 268 588, 250 612" />
+          <path class="hair" style="--len:180; --delay:2.0s" stroke-width="1.1"
+            d="M312 720 C 334 732, 352 742, 372 762" />
+        </g>
+      </svg>
+
+      <img class="brand__mark" src="fostr-wordmark-white.png" alt="Fostr" />
+
+      <div class="brand__body">
+        <p class="brand__line">The paperwork stays here, so more of your day can reach a kid.</p>
+        <p class="brand__sub">Case records, held steady. Load-bearing, and out of your way.</p>
+      </div>
+    </section>
+
+    <!-- RIGHT: sign-in form -->
+    <section class="form-pane">
+      <div class="form-card">
+        <img class="form-card__mark" src="fostr-wordmark-black.png" alt="Fostr" />
+
+        <h1>Sign in</h1>
+        <p class="form-card__intro">Pick up where your caseload left off.</p>
+
+        <form id="signin" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username"
+                   inputmode="text" autocapitalize="none" spellcheck="false"
+                   placeholder="j.rivera" required />
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="pw-wrap">
+              <input id="password" name="password" type="password" autocomplete="current-password"
+                     placeholder="Your password" required />
+              <button type="button" class="pw-toggle" id="pwToggle"
+                      aria-controls="password" aria-pressed="false">Show</button>
+            </div>
+          </div>
+
+          <div class="row-between">
+            <label class="check">
+              <input type="checkbox" name="keep" id="keep" />
+              Keep me signed in
+            </label>
+            <a class="link forgot" href="#">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submitBtn">Sign in</button>
+
+          <div class="divider" role="separator" aria-hidden="true">or</div>
+
+          <button type="button" class="btn-ghost" id="ssoBtn">
+            Sign in with agency SSO
+          </button>
+
+          <p class="support">Trouble signing in? Ask your agency admin.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Show / Hide password
+    (function () {
+      var toggle = document.getElementById('pwToggle');
+      var pw = document.getElementById('password');
+      toggle.addEventListener('click', function () {
+        var showing = pw.type === 'text';
+        pw.type = showing ? 'password' : 'text';
+        toggle.textContent = showing ? 'Show' : 'Hide';
+        toggle.setAttribute('aria-pressed', String(!showing));
+        pw.focus({ preventScroll: true });
+      });
+    })();
+
+    // Submit -> brief inline "Signing in…" (no server)
+    (function () {
+      var form = document.getElementById('signin');
+      var btn = document.getElementById('submitBtn');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (btn.getAttribute('aria-busy') === 'true') return;
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        btn.setAttribute('aria-busy', 'true');
+        btn.disabled = true;
+        var original = btn.textContent;
+        btn.textContent = 'Signing in…';
+        window.setTimeout(function () {
+          btn.textContent = original;
+          btn.removeAttribute('aria-busy');
+          btn.disabled = false;
+        }, 1400);
+      });
+    })();
+
+    // SSO placeholder (no server)
+    (function () {
+      var sso = document.getElementById('ssoBtn');
+      sso.addEventListener('click', function () {
+        var label = sso.textContent;
+        sso.textContent = 'Opening agency SSO…';
+        sso.disabled = true;
+        window.setTimeout(function () {
+          sso.textContent = label;
+          sso.disabled = false;
+        }, 1400);
+      });
+    })();
+  </script>
+</body>
+</html>

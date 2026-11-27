@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr Fieldbook — the living orb (mobile home)</title>
+<style>
+  :root{
+    --teal:#5DA1A1; --teal-deep:#2F6B6B; --gold:#E4BE79; --ink:#1A2323; --muted:#4A5A5A;
+    --paper:#F5F8F8; --surface:#ffffff; --border:#DCE4E4;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --head:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(120% 80% at 50% 0%, #e9f3f1, #dfe9e7 60%, #d5e0de);
+    font-family:var(--sans);color:var(--ink);display:grid;place-items:center;min-height:100%;padding:24px;-webkit-font-smoothing:antialiased}
+  /* phone frame */
+  .phone{position:relative;width:390px;height:800px;max-height:92vh;border-radius:52px;background:
+     radial-gradient(130% 90% at 50% -6%, #f2faf8 0%, #eef5f3 42%, #f5f8f8 100%);
+    box-shadow:0 40px 120px rgba(26,35,35,.32), inset 0 0 0 10px #0e1413, inset 0 0 0 12px #2a3230;
+    overflow:hidden;display:flex;flex-direction:column}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:16px 30px 2px;font-size:13px;font-weight:600}
+  .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:112px;height:30px;background:#0e1413;border-radius:20px;z-index:5}
+  .screen{flex:1;display:flex;flex-direction:column;padding:8px 24px 0;position:relative;overflow:hidden}
+  .head{display:flex;align-items:center;gap:9px;margin:14px 2px 2px}
+  .head h1{font-family:var(--head);font-size:1.55rem;font-weight:700;letter-spacing:-.02em;margin:0;color:var(--ink)}
+  /* orb */
+  .orbwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;user-select:none;touch-action:none}
+  @keyframes orb-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  .orbstage{position:relative;width:260px;height:260px;display:grid;place-items:center;cursor:grab;
+    animation:orb-breathe 4.6s ease-in-out infinite}
+  .orbstage:active{cursor:grabbing}
+  .orbglow{position:absolute;inset:-8%;border-radius:50%;filter:blur(38px);opacity:.4;transition:background .6s ease, transform .5s cubic-bezier(.22,1,.36,1)}
+  .orb{width:248px;height:248px;border-radius:50%;position:relative;display:block;
+    box-shadow:0 24px 60px rgba(47,107,107,.22), inset 0 2px 10px rgba(255,255,255,.55)}
+  /* the live count, sitting inside the goo */
+  .orbnum{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+  .numgoo{width:248px;height:248px;filter:blur(4px) contrast(19);opacity:.95}
+  .numgoo canvas{width:248px;height:248px;display:block}
+  /* live tuning panel (prototype only) */
+  .adj{position:fixed;top:22px;right:22px;width:212px;background:rgba(255,255,255,.86);backdrop-filter:blur(12px);
+    border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:0 18px 50px rgba(26,35,35,.16);
+    font-family:var(--sans);z-index:50}
+  .adj .adjh{font-family:var(--head);font-weight:700;font-size:.82rem;color:var(--ink);margin-bottom:12px}
+  .adj label{display:flex;flex-direction:column;gap:5px;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:11px}
+  .adj label b{color:var(--teal-deep);font-variant-numeric:tabular-nums}
+  .adj input[type=range]{accent-color:var(--teal);width:100%}
+  .adj input[type=color]{width:100%;height:32px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;padding:2px}
+  .lenslabel{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--teal-deep);margin-top:14px;transition:opacity .25s}
+  .num{font-family:var(--head);font-weight:700;letter-spacing:-.02em;font-size:2.9rem;line-height:1;margin-top:6px;transition:opacity .25s}
+  .num.warm{color:#B4802E}.num.calm{color:var(--teal-deep)}
+  .unit{font-size:.95rem;color:var(--muted);margin-top:4px;transition:opacity .25s}
+  .sub{font-size:.8rem;color:#8a938f;margin-top:2px;transition:opacity .25s}
+  /* dots */
+  .dots{display:flex;gap:7px;margin-top:16px}
+  .dot{width:7px;height:7px;border-radius:50%;background:rgba(26,35,35,.16);transition:all .3s;cursor:pointer}
+  .dot.on{background:var(--teal);width:20px;border-radius:99px}
+  /* cta + tabbar */
+  .cta{margin:18px 4px 6px;display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:15px;
+    background:var(--teal-deep);color:#fff;font-family:var(--sans);font-weight:600;font-size:1rem;border:0;cursor:pointer;
+    box-shadow:0 10px 26px rgba(47,107,107,.34);transition:transform .12s, background .15s;width:calc(100% - 8px)}
+  .cta:active{transform:scale(.98);background:#255c5c}
+  .tabbar{display:flex;justify-content:center;gap:44px;padding:12px 0 24px;margin-top:auto}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9aa39f;font-weight:600}
+  .tab.on{color:var(--teal-deep)}
+  .tab svg{width:22px;height:22px}
+  /* queue panel (slides up on tap) */
+  .queue{position:absolute;inset:0;background:var(--paper);transform:translateY(100%);transition:transform .38s cubic-bezier(.22,1,.36,1);
+    display:flex;flex-direction:column;padding:8px 20px 0;z-index:9;
+    background-image:radial-gradient(circle, color-mix(in srgb, var(--teal) 40%, transparent) 1.3px, transparent 1.5px);background-size:22px 22px}
+  .queue.on{transform:none}
+  .qhead{display:flex;align-items:center;gap:10px;padding:44px 2px 12px}
+  .qback{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:#fff;display:grid;place-items:center;cursor:pointer}
+  .qhead h2{font-family:var(--head);font-size:1.3rem;font-weight:700;margin:0}
+  .qlist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:20px}
+  .qrow{background:#fff;border:1px solid var(--border);border-radius:16px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 10px rgba(26,35,35,.05)}
+  .qrow .nm{font-weight:600;font-size:.95rem}
+  .qrow .mt{font-size:.78rem;color:var(--muted);margin-top:1px}
+  .qdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
+  .meter{display:inline-flex;height:6px;width:64px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+  .meter i{display:block;height:100%}
+  .hint{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:11px;color:#9aa39f}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>14.59</span><span>￼ ￼ ￼</span></div>
+  <div class="screen">
+    <div class="head">
+      <h1>Your Fostr Fieldbook</h1>
+      <svg width="26" height="17" viewBox="112 122 32 20" fill="none" style="overflow:visible">
+        <path d="M128.571 140V131.952C127.175 129.999 121.029 125.903 116 127.619" stroke="#5DA1A1" stroke-width="4.19" stroke-linecap="round"/>
+        <path d="M128.571 131.952C130.899 129.222 137.79 125.698 141.143 127.485" stroke="#5DA1A1" stroke-width="4.19" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="orbwrap" id="orbwrap">
+      <div class="orbstage" id="orbstage">
+        <div class="orbglow" id="orbglow"></div>
+        <canvas class="orb" id="orb" width="496" height="496"></canvas>
+        <div class="orbnum" id="orbnum"><div class="numgoo" id="numgoo"><canvas id="numcv" width="248" height="248"></canvas></div></div>
+      </div>
+      <div class="lenslabel" id="lenslabel">ALL OPEN</div>
+      <div class="unit" id="unit">open cases</div>
+      <div class="sub" id="sub">across your whole caseload</div>
+      <div class="dots" id="dots"></div>
+    </div>
+
+    <button class="cta" id="cta">Start next visit&nbsp; →</button>
+
+    <div class="tabbar">
+      <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>Home</div>
+      <div class="tab" id="tabCases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h5"/></svg>Cases</div>
+    </div>
+
+    <!-- the queue, one tap in -->
+    <div class="queue" id="queue">
+      <div class="qhead">
+        <button class="qback" id="qback">‹</button>
+        <h2>What needs you</h2>
+      </div>
+      <div class="qlist" id="qlist"></div>
+      <div class="hint">the calm home is one tap away</div>
+    </div>
+  </div>
+</div>
+
+<div class="adj">
+  <div class="adjh">Number · tune</div>
+  <label>Colour <input type="color" id="aColor" value="#2C6161"></label>
+  <label>Prominence <input type="range" id="aProm" min="0.25" max="1" step="0.05" value="0.95"></label>
+  <label>Solidity <input type="range" id="aSol" min="8" max="28" step="1" value="19"></label>
+  <label>Stroke <input type="range" id="aSize" min="3" max="11" step="0.5" value="6"></label>
+  <label>Density <input type="range" id="aDen" min="60" max="220" step="10" value="200"></label>
+</div>
+
+<script>
+(function(){
+  var TEAL="#5DA1A1", GOLD="#E4BE79";
+  // The case pipeline — one number per stage, and the goo IS that number.
+  // Pull the orb right to walk the stages; the goos form/disband to the live count.
+  var LENSES=[
+    { label:"ALL OPEN",     count:32, gold:0.52, calm:0.45, unit:"open cases",  sub:"across your whole caseload" },
+    { label:"NEEDS REVIEW", count:12, gold:0.80, calm:0.30, unit:"to review",   sub:"drafted by Fostr, awaiting you" },
+    { label:"IN QUEUE",     count:5,  gold:0.90, calm:0.24, unit:"in queue",    sub:"ready to file" },
+    { label:"UPDATED",      count:3,  gold:0.16, calm:0.85, unit:"filed today", sub:"synced with the system" },
+  ];
+  var lens=0, targetCalm=LENSES[0].calm, calm=LENSES[0].calm;
+
+  // ---- the orb: WebGL2 liquid-glass metaballs ----
+  // Each goo = one unit of caseload; the count of goos IS the number shown.
+  // Refraction technique ported from Figma "Pattern refraction": build a height
+  // field from the blobs, take surface normals, then refract() per RGB channel
+  // (IOR dispersion) and sample the colour underneath — frosted, so it reads as
+  // liquid glass rather than solid paint.
+  var MAXB=32;
+  var cvs=document.getElementById("orb");
+  var gl=cvs.getContext("webgl2",{premultipliedAlpha:false, alpha:true, antialias:true});
+
+  var VERT="#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}";
+  var FRAG=[
+   "#version 300 es","precision highp float;","out vec4 o;",
+   "uniform vec2 uRes; uniform float uCalm; uniform vec4 uBlobs[32];",
+   "const int MAXB=32;",
+   "const vec3 TEAL=vec3(0.365,0.631,0.631);",
+   "const vec3 GOLD=vec3(0.894,0.745,0.475);",
+   "vec3 fieldGrad(vec2 pt){ float f=0.0; vec2 g=vec2(0.0);",
+   "  for(int i=0;i<MAXB;i++){ float s=uBlobs[i].z; if(s<=0.0) continue;",
+   "    vec2 d=pt-uBlobs[i].xy; float s2=s*s; float h=exp(-dot(d,d)/(2.0*s2));",
+   "    f+=h; g+=h*(-d/s2); } return vec3(f,g); }",
+   "vec3 colorAt(vec2 pt){ float f=0.0; vec3 c=vec3(0.0);",
+   "  for(int i=0;i<MAXB;i++){ float s=uBlobs[i].z; if(s<=0.0) continue;",
+   "    vec2 d=pt-uBlobs[i].xy; float h=exp(-dot(d,d)/(2.0*s*s));",
+   "    f+=h; c+=mix(TEAL,GOLD,uBlobs[i].w)*h; }",
+   "  c/=max(f,1e-4); vec3 wash=vec3(0.94,0.975,0.965);",
+   "  float dens=clamp(f,0.0,1.0); return mix(wash,c,dens*0.5); }",
+   "void main(){",
+   "  vec2 uv=gl_FragCoord.xy/uRes; uv.y=1.0-uv.y;",
+   "  vec2 q=uv-0.5; float len=length(q); float R=0.47;",
+   "  float a=smoothstep(R+0.006,R-0.006,len); if(a<=0.0){o=vec4(0.0);return;}",
+   "  vec3 fg=fieldGrad(uv); float B=0.030;",
+   "  vec3 nr=normalize(vec3(-fg.y*B,-fg.z*B,1.0));",
+   "  vec3 ray=vec3(0.0,0.0,-1.0);",
+   "  float disp=0.012*(0.5+(1.0-uCalm)); float amt=0.055;",
+   "  vec3 rR=refract(ray,nr,1.03+disp); vec3 rG=refract(ray,nr,1.03); vec3 rB=refract(ray,nr,1.03-disp);",
+   "  vec3 cR=colorAt(uv+rR.xy*amt); vec3 cG=colorAt(uv+rG.xy*amt); vec3 cB=colorAt(uv+rB.xy*amt);",
+   "  vec3 col=vec3(cR.r,cG.g,cB.b);",
+   "  float slope=clamp(1.0-nr.z,0.0,1.0);",
+   "  vec3 L=normalize(vec3(-0.35,-0.55,0.85));",
+   "  float spec=pow(max(dot(reflect(ray,-nr),L),0.0),24.0);",
+   "  col+=slope*0.05; col+=spec*0.4;",
+   "  float sh=smoothstep(0.44,0.0,length(uv-vec2(0.36,0.30))); col=mix(col,col+vec3(1.0),sh*0.20);",
+   "  float rim=smoothstep(R-0.03,R,len); col=mix(col,vec3(1.0),rim*0.10);",
+   "  col*=1.0-smoothstep(0.25,R,len)*0.05;",
+   "  o=vec4(clamp(col,0.0,1.0),a);",
+   "}"].join("\n");
+
+  function sh(type,src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) console.warn("shader:",gl.getShaderInfoLog(s)); return s; }
+  var prog=gl.createProgram();
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VERT));
+  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FRAG));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  var vb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,vb);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1, 3,-1, -1,3]),gl.STATIC_DRAW);
+  var pl=gl.getAttribLocation(prog,"p"); gl.enableVertexAttribArray(pl); gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  var uRes=gl.getUniformLocation(prog,"uRes"), uCalm=gl.getUniformLocation(prog,"uCalm");
+  var uBlobs=gl.getUniformLocation(prog,"uBlobs[0]")||gl.getUniformLocation(prog,"uBlobs");
+
+  // blob pool — inactive blobs have radius 0 (fully disbanded)
+  var pool=[]; for(var i=0;i<MAXB;i++) pool.push({x:0.5,y:0.5,hx:0.5,hy:0.5,ph:i*1.7,r:0,rT:0,g:0.5,gT:0.5,ox:0});
+  function layout(count, gold){
+    var n=Math.min(count,MAXB);
+    var sigma=0.20*Math.pow(Math.max(n,1),-0.34);   // more goos → smaller, still merging
+    for(var k=0;k<MAXB;k++){ var b=pool[k];
+      if(k<n){ var frac=(k+0.5)/n, rad=0.60*0.47*Math.sqrt(frac), ang=k*2.399963;
+        b.hx=0.5+Math.cos(ang)*rad; b.hy=0.5+Math.sin(ang)*rad; b.rT=sigma; b.gT=gold; }
+      else { b.rT=0; }                                // disband the rest
+    }
+  }
+
+  // gooey drag spring — low stiffness + heavy damping = slow liquid settle
+  var dragTarget=0, dragPos=0, dragVel=0;
+  var uBuf=new Float32Array(MAXB*4), startT=0;
+  function draw(t){
+    if(!startT) startT=t; var tt=(t-startT)*0.001;
+    calm += (targetCalm-calm)*0.05;
+    dragVel += (dragTarget-dragPos)*0.045; dragVel*=0.86; dragPos+=dragVel;
+    for(var k=0;k<MAXB;k++){ var b=pool[k];
+      b.r += (b.rT-b.r)*0.07;                         // form / disband smoothly
+      b.g += (b.gT-b.g)*0.04;
+      b.ox += (dragPos*0.12 - b.ox)*(0.05 + k*0.004); // trailing lag → gooey drag
+      var wx=b.hx + Math.cos(tt*0.5+b.ph)*0.012, wy=b.hy + Math.sin(tt*0.6+b.ph*1.3)*0.012;
+      b.x += (wx-b.x)*0.08; b.y += (wy-b.y)*0.08;     // glide toward new formation
+      uBuf[k*4]=b.x+b.ox; uBuf[k*4+1]=b.y; uBuf[k*4+2]=b.r; uBuf[k*4+3]=b.g;
+    }
+    gl.viewport(0,0,cvs.width,cvs.height);
+    gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(prog);
+    gl.uniform2f(uRes,cvs.width,cvs.height);
+    gl.uniform1f(uCalm,calm);
+    gl.uniform4fv(uBlobs,uBuf);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+  layout(LENSES[0].count, LENSES[0].gold);
+
+  // ---- the count, rendered as coalescing goo inside the orb ----
+  // Particles fly in and merge into the digits (Coalesce direction). The SHAPE
+  // spells the live number; density is fixed high so any value reads clearly.
+  var numcv=document.getElementById("numcv"), nctx=numcv.getContext("2d");
+  var NW=numcv.width, NH=numcv.height, NC=NW/2, numgoo=document.getElementById("numgoo");
+  var numColor="#2C6161", nDensity=200, nSize=6, nSpeed=0.11, nJit=1.6;
+  var NMAX=220, nParts=[], nStr=String(LENSES[0].count);
+  for(var np=0;np<NMAX;np++) nParts.push({x:NC,y:NC,tx:NC,ty:NC,ph:Math.random()*6.28,live:false,wasLive:false});
+
+  function nSample(str, count){
+    var oc=document.createElement("canvas"); oc.width=NW; oc.height=NH; var o=oc.getContext("2d");
+    o.fillStyle="#000"; o.textAlign="center"; o.textBaseline="middle";
+    var fs = str.length>=3 ? 92 : (str.length===2 ? 124 : 150);
+    o.font="900 "+fs+'px "Plus Jakarta Sans", system-ui, -apple-system, sans-serif';
+    o.fillText(str, NC, NC-2);
+    var d=o.getImageData(0,0,NW,NH).data, hits=[];
+    for(var y=0;y<NH;y+=2) for(var x=0;x<NW;x+=2){ if(d[(y*NW+x)*4+3]>128) hits.push([x,y]); }
+    var out=[]; if(!hits.length) return out;
+    for(var i=0;i<count;i++) out.push(hits[Math.floor((i+0.5)/count*hits.length)]);
+    return out;
+  }
+  function nAssign(){
+    var count=Math.min(nDensity,NMAX), pts=nSample(nStr,count);
+    for(var i=0;i<NMAX;i++){ var p=nParts[i];
+      if(i<count && pts[i]){ if(!p.wasLive){ var a=Math.random()*6.28, rad=NC*(0.6+Math.random()*0.7);
+          p.x=NC+Math.cos(a)*rad; p.y=NC+Math.sin(a)*rad; }
+        p.tx=pts[i][0]; p.ty=pts[i][1]; p.live=true; }
+      else { p.live=false; p.tx=NC+(Math.random()-0.5)*24; p.ty=NC+(Math.random()-0.5)*24; }
+      p.wasLive=p.live;
+    }
+  }
+  function numSet(n){ nStr=String(n); nAssign(); }     // hook the lens count to the goo
+  var ntt=0;
+  function numFrame(){ ntt+=0.016;
+    nctx.clearRect(0,0,NW,NH); nctx.fillStyle=numColor;
+    for(var i=0;i<NMAX;i++){ var p=nParts[i]; if(!p.live) continue;
+      p.x+=(p.tx-p.x)*nSpeed; p.y+=(p.ty-p.y)*nSpeed;
+      var jx=Math.cos(ntt*1.5+p.ph)*nJit, jy=Math.sin(ntt*1.8+p.ph*1.3)*nJit;
+      nctx.beginPath(); nctx.arc(p.x+jx,p.y+jy,nSize,0,6.2832); nctx.fill();
+    }
+    requestAnimationFrame(numFrame);
+  }
+  requestAnimationFrame(numFrame); nAssign();
+
+  // live adjusters — colour + prominence of the number
+  function setSol(){ numgoo.style.filter="blur(4px) contrast("+document.getElementById("aSol").value+")"; }
+  document.getElementById("aColor").oninput=function(){ numColor=this.value; };
+  document.getElementById("aProm").oninput=function(){ numgoo.style.opacity=this.value; };
+  document.getElementById("aSol").oninput=setSol;
+  document.getElementById("aSize").oninput=function(){ nSize=parseFloat(this.value); };
+  document.getElementById("aDen").oninput=function(){ nDensity=parseFloat(this.value); nAssign(); };
+
+  // glow tint — soft, follows the stage's warmth
+  function paintGlow(){ var g=document.getElementById("orbglow");
+    var stop=Math.max(24,Math.round(LENSES[lens].gold*70));
+    g.style.background="radial-gradient(circle, "+GOLD+" 0%, "+TEAL+" "+stop+"%, transparent 70%)";
+  }
+  setInterval(paintGlow, 140); paintGlow();
+
+  // ---- lens switching ----
+  var dotsEl=document.getElementById("dots");
+  LENSES.forEach(function(_,i){ var d=document.createElement("div"); d.className="dot"+(i===0?" on":""); d.onclick=function(){setLens(i);}; dotsEl.appendChild(d); });
+  function setLens(i){
+    lens=(i+LENSES.length)%LENSES.length; var L=LENSES[lens]; targetCalm=L.calm;
+    layout(L.count, L.gold);      // goos reform to the new count (form / disband)
+    numSet(L.count);              // the goos reform into the new number
+    // crossfade the label / caption
+    ["lenslabel","unit","sub"].forEach(function(id){ document.getElementById(id).style.opacity=0; });
+    setTimeout(function(){
+      document.getElementById("lenslabel").textContent=L.label;
+      document.getElementById("unit").textContent=L.unit;
+      document.getElementById("sub").textContent=L.sub;
+      ["lenslabel","unit","sub"].forEach(function(id){ document.getElementById(id).style.opacity=1; });
+    },170);
+    Array.prototype.forEach.call(dotsEl.children,function(d,j){ d.classList.toggle("on", j===lens); });
+  }
+
+  // ---- malleable drag on the orb: pull right walks the pipeline forward ----
+  var stage=document.getElementById("orbstage"), dragging=false, sx=0, dx=0;
+  function down(e){ dragging=true; sx=(e.touches?e.touches[0].clientX:e.clientX); }
+  function move(e){ if(!dragging) return; var x=(e.touches?e.touches[0].clientX:e.clientX); dx=x-sx;
+    dragTarget=Math.max(-1,Math.min(1,dx/120));          // feeds the gooey spring
+    document.getElementById("orbglow").style.transform="translateX("+(dragTarget*12)+"px)";
+  }
+  function up(){ if(!dragging) return; dragging=false;
+    dragTarget=0; document.getElementById("orbglow").style.transform="";
+    if(dx>60) setLens(lens+1); else if(dx<-60) setLens(lens-1);   // pull right → next stage
+    dx=0;
+  }
+  stage.addEventListener("mousedown",down); window.addEventListener("mousemove",move); window.addEventListener("mouseup",up);
+  stage.addEventListener("touchstart",down,{passive:true}); stage.addEventListener("touchmove",move,{passive:true}); stage.addEventListener("touchend",up);
+  // tapping the orb opens the queue (one tap to the work)
+  stage.addEventListener("click", function(){ if(Math.abs(dx)<6) openQueue(); });
+
+  // ---- queue panel ----
+  var CASES=[
+    {n:"Aaliyah Nguyen", m:"9 · in care · overdue", c:"#C0632F", sc:[5,3,2,1], safety:true},
+    {n:"Marcus Alvarez", m:"14 · 1d overdue", c:"#C0632F", sc:[7,2,1,1]},
+    {n:"Priya Desai", m:"6 · due in 2d", c:"#B4802E", sc:[6,3,1,1]},
+    {n:"DeShawn Carter", m:"12 · due in 3d", c:"#B4802E", sc:[6,4,1,0]},
+    {n:"Lucia Romano", m:"8 · in review queue", c:"#2F6B6B", sc:[7,3,1,0]},
+    {n:"Emma Sullivan", m:"5 · in review queue", c:"#2F6B6B", sc:[8,2,1,0]},
+    {n:"Sofia Herrera", m:"7 · updated", c:"#137333", sc:[6,3,1,1]},
+  ];
+  var SCOL=["#5DA1A1","#B4802E","#C0632F","#dce4e4"];
+  var qlist=document.getElementById("qlist");
+  CASES.forEach(function(c){
+    var tot=c.sc.reduce(function(a,b){return a+b;},0);
+    var meter='<span class="meter">'+c.sc.map(function(n,i){return n>0?'<i style="width:'+(n/tot*100)+'%;background:'+SCOL[i]+'"></i>':'';}).join("")+'</span>';
+    var row=document.createElement("div"); row.className="qrow";
+    row.innerHTML='<div><div class="nm"><span class="qdot" style="background:'+c.c+'"></span>'+c.n+(c.safety?' <span style="font:600 9px/1 ui-monospace;color:#b23b2e;border:1px solid #b23b2e66;border-radius:4px;padding:1px 4px">SAFETY</span>':'')+'</div><div class="mt">'+c.m+'</div></div>'+
+      '<div style="text-align:right">'+meter+'<div class="mt" style="font-family:ui-monospace">'+c.sc[0]+'/11</div></div>';
+    qlist.appendChild(row);
+  });
+  function openQueue(){ document.getElementById("queue").classList.add("on"); }
+  document.getElementById("qback").onclick=function(){ document.getElementById("queue").classList.remove("on"); };
+  document.getElementById("tabCases").onclick=openQueue;
+  document.getElementById("cta").onclick=openQueue;
+})();
+</script>
+</body>
+</html>

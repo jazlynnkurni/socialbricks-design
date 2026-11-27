@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fostr — Sign in</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* ---- CALM FIELD: a single centered card on a slow living aurora ---- */
+  html, body { height: 100%; }
+  body {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 32px 20px;
+    position: relative;
+    overflow: hidden;
+    background: var(--canvas);
+  }
+
+  /* Living background: two very slow drifting teal auroras + a faint breathing dot-field.
+     All positioned behind the card, none interactive. */
+  .aurora {
+    position: fixed;
+    inset: -25%;
+    z-index: 0;
+    pointer-events: none;
+    filter: blur(60px);
+    opacity: 0.55;
+  }
+  .aurora span {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--teal), transparent 68%);
+    will-change: transform;
+  }
+  .aurora .a1 {
+    width: 46vmax; height: 46vmax;
+    top: 2%; left: 8%;
+    opacity: 0.42;
+    animation: drift1 34s ease-in-out infinite;
+  }
+  .aurora .a2 {
+    width: 40vmax; height: 40vmax;
+    bottom: 4%; right: 6%;
+    background: radial-gradient(circle at 50% 50%, var(--teal-deep), transparent 68%);
+    opacity: 0.30;
+    animation: drift2 44s ease-in-out infinite;
+  }
+  .aurora .a3 {
+    width: 30vmax; height: 30vmax;
+    top: 40%; left: 46%;
+    background: radial-gradient(circle at 50% 50%, var(--gold), transparent 70%);
+    opacity: 0.10;
+    animation: drift3 52s ease-in-out infinite;
+  }
+
+  /* Faint dot-field that breathes — sits above the aurora, below the card. */
+  .dotfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(color-mix(in srgb, var(--teal) 22%, transparent) 1px, transparent 1.4px);
+    background-size: 30px 30px;
+    background-position: center;
+    opacity: 0.22;
+    animation: breathe 11s ease-in-out infinite;
+  }
+
+  @keyframes drift1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(6vmax, 4vmax) scale(1.08); }
+  }
+  @keyframes drift2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-5vmax, -4vmax) scale(1.12); }
+  }
+  @keyframes drift3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-4vmax, 3vmax) scale(1.06); }
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.16; transform: scale(1); }
+    50%      { opacity: 0.26; transform: scale(1.015); }
+  }
+
+  /* Top soft veil so the card never fights the background for contrast. */
+  .veil {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 40%, transparent 40%, color-mix(in srgb, var(--canvas) 70%, transparent) 100%);
+  }
+
+  /* ---- The card ---- */
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 400px;
+    background: color-mix(in srgb, var(--paper) 86%, transparent);
+    -webkit-backdrop-filter: saturate(1.15) blur(14px);
+    backdrop-filter: saturate(1.15) blur(14px);
+    border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    border-radius: 20px;
+    padding: 34px 30px 30px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.6) inset,
+      0 18px 50px -22px rgba(31,39,37,0.28),
+      0 2px 8px -4px rgba(31,39,37,0.12);
+    animation: rise .5s cubic-bezier(.22,.61,.36,1) both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---- Brand ---- */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 26px;
+  }
+  .brand svg { display: block; }
+  .brand .wordmark {
+    font-size: 1.32rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  /* Gentle life on the sprout: leaves ease open once, stem hairline settles. */
+  .sprout .leaf {
+    transform-box: fill-box;
+    transform-origin: bottom center;
+    animation: unfurl 1.1s cubic-bezier(.22,.61,.36,1) both;
+  }
+  .sprout .leaf-r { animation-delay: .12s; }
+  @keyframes unfurl {
+    from { transform: scale(0.55) rotate(-8deg); opacity: 0; }
+    to   { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
+  .head { margin-bottom: 22px; }
+  .head h1 {
+    margin: 0 0 4px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .head p {
+    margin: 0;
+    font-size: 0.94rem;
+    color: var(--ink-2);
+  }
+
+  form { display: grid; gap: 16px; }
+
+  /* Password field with inline show/hide toggle. */
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 52px; }
+  .pw-toggle {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    color: var(--ink-3);
+    transition: color .15s ease, background .15s ease;
+  }
+  .pw-toggle:hover { color: var(--teal-deep); background: var(--teal-tint); }
+  .pw-toggle svg { display: block; }
+
+  .label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 7px;
+    gap: 12px;
+  }
+  .label-row label { margin-bottom: 0; }
+  .field .label-row + input,
+  .field > .label-row ~ input { margin-top: 0; }
+
+  /* "Keep me signed in" row */
+  .row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    min-height: var(--tap);
+    color: var(--ink-2);
+    font-size: 0.9rem;
+    user-select: none;
+  }
+  .check input {
+    position: absolute;
+    opacity: 0;
+    width: 1px; height: 1px;
+    pointer-events: none;
+  }
+  .check .box {
+    width: 22px; height: 22px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .check .box svg { opacity: 0; transform: scale(.6); transition: opacity .15s ease, transform .15s ease; color: #fff; }
+  .check input:checked + .box { background: var(--teal); border-color: var(--teal); }
+  .check input:checked + .box svg { opacity: 1; transform: scale(1); }
+  .check input:focus-visible + .box { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  /* Primary button + inline signing-in state */
+  .btn-primary {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 2px;
+  }
+  .btn-primary[aria-busy="true"] { cursor: default; opacity: 0.9; }
+  .spinner {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Divider */
+  .or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink-3);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 2px 0;
+  }
+  .or::before, .or::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: var(--line);
+  }
+
+  .support {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem;
+    color: var(--ink-3);
+    text-align: center;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 28px 22px 26px; border-radius: 18px; }
+    .head h1 { font-size: 1.4rem; }
+  }
+
+  /* Respect reduced-motion: kill all ambient + entrance motion. */
+  @media (prefers-reduced-motion: reduce) {
+    .aurora .a1, .aurora .a2, .aurora .a3,
+    .dotfield, .card, .sprout .leaf, .spinner {
+      animation: none !important;
+    }
+    .aurora { opacity: 0.4; }
+  }
+</style>
+</head>
+<body>
+  <!-- Living background (decorative, non-interactive) -->
+  <div class="aurora" aria-hidden="true">
+    <span class="a1"></span>
+    <span class="a2"></span>
+    <span class="a3"></span>
+  </div>
+  <div class="dotfield" aria-hidden="true"></div>
+  <div class="veil" aria-hidden="true"></div>
+
+  <main class="card">
+    <div class="brand">
+      <!-- Fostr sprout mark: two leaves over an o-stem -->
+      <svg class="sprout brandmark" width="26" height="30" viewBox="0 0 26 30" fill="none" aria-hidden="true">
+        <path class="leaf leaf-l" d="M13 15C13 15 12.4 7.8 6.8 5.6C3.6 4.3 1.4 5.2 1.4 5.2C1.4 5.2 1.9 11.4 6 13.6C9.2 15.3 13 15 13 15Z" fill="currentColor" opacity="0.55"/>
+        <path class="leaf leaf-r" d="M13 15C13 15 13.6 6.4 19.8 4.1C23.4 2.7 25.6 3.7 25.6 3.7C25.6 3.7 25.1 10.8 20.4 13.2C16.8 15 13 15 13 15Z" fill="currentColor"/>
+        <path d="M13 14V27" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      <span class="wordmark">Fostr</span>
+    </div>
+
+    <div class="head">
+      <h1>Sign in</h1>
+      <p>Your caseload's waiting.</p>
+    </div>
+
+    <form id="signin" novalidate autocomplete="on">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="jsmith" required>
+      </div>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="password">Password</label>
+          <a class="link" href="#" style="font-size:0.82rem;">Forgot password?</a>
+        </div>
+        <div class="pw-wrap">
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" aria-pressed="false" title="Show password">
+            <!-- eye (shown when password hidden) -->
+            <svg class="eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- eye-off (shown when password visible) -->
+            <svg class="eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+              <path d="M3 3l18 18"/>
+              <path d="M10.6 5.2A9.6 9.6 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.3 4.1"/>
+              <path d="M6.3 6.4A17.4 17.4 0 0 0 2 12s3.5 7 10 7a9.4 9.4 0 0 0 4-.9"/>
+              <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="row-between">
+        <label class="check">
+          <input type="checkbox" name="keep" id="keep">
+          <span class="box">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>
+          </span>
+          <span>Keep me signed in</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary" id="submitBtn">
+        <span class="btn-label">Sign in</span>
+      </button>
+
+      <div class="or">or</div>
+
+      <button type="button" class="btn-ghost" id="ssoBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Sign in with agency SSO
+      </button>
+    </form>
+
+    <p class="support">Trouble signing in? Ask your agency admin.</p>
+  </main>
+
+  <script>
+    (function () {
+      // Show / hide password
+      var pw = document.getElementById('password');
+      var toggle = document.getElementById('pwToggle');
+      var eye = toggle.querySelector('.eye');
+      var eyeOff = toggle.querySelector('.eye-off');
+      toggle.addEventListener('click', function () {
+        var show = pw.type === 'password';
+        pw.type = show ? 'text' : 'password';
+        eye.style.display = show ? 'none' : 'block';
+        eyeOff.style.display = show ? 'block' : 'none';
+        toggle.setAttribute('aria-pressed', String(show));
+        toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        toggle.setAttribute('title', show ? 'Hide password' : 'Show password');
+        pw.focus({ preventScroll: true });
+      });
+
+      // Inline "Signing in…" state — visual only, no server.
+      var form = document.getElementById('signin');
+      var btn = document.getElementById('submitBtn');
+      var label = btn.querySelector('.btn-label');
+      var busy = false;
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (busy) return;
+        busy = true;
+        btn.setAttribute('aria-busy', 'true');
+        btn.disabled = true;
+        label.textContent = 'Signing in…';
+        var sp = document.createElement('span');
+        sp.className = 'spinner';
+        sp.setAttribute('aria-hidden', 'true');
+        btn.insertBefore(sp, label);
+        // Settle back after a moment (prototype has nowhere to go).
+        setTimeout(function () {
+          btn.removeAttribute('aria-busy');
+          btn.disabled = false;
+          if (sp.parentNode) sp.parentNode.removeChild(sp);
+          label.textContent = 'Sign in';
+          busy = false;
+        }, 1600);
+      });
+
+      // SSO path — same calm inline acknowledgement.
+      var sso = document.getElementById('ssoBtn');
+      sso.addEventListener('click', function () {
+        var original = sso.querySelector('svg') ? null : null;
+        if (sso.dataset.busy === '1') return;
+        sso.dataset.busy = '1';
+        var prev = sso.innerHTML;
+        sso.innerHTML = 'Redirecting to your agency…';
+        setTimeout(function () {
+          sso.innerHTML = prev;
+          sso.dataset.busy = '0';
+        }, 1600);
+      });
+    })();
+  </script>
+</body>
+</html>

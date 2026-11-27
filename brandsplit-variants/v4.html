@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fostr — Sign in</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* ---- v4 "Kinetic Type": the copy IS the animation ---- */
+  .stage {
+    min-height: 100%;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+  }
+
+  /* LEFT — flat, confident teal brand panel */
+  .brand {
+    position: relative;
+    background: var(--teal-deep);
+    color: #fff;
+    padding: clamp(2.5rem, 5vw, 4.5rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+  .brand__mark { height: 30px; width: auto; }
+  .brand__mark img { height: 100%; width: auto; display: block; }
+
+  .brand__hero { max-width: 15ch; margin: auto 0; }
+  .brand__eyebrow {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, #fff 62%, var(--teal));
+    margin: 0 0 1.4rem;
+    opacity: 0;
+    transform: translateY(6px);
+    animation: rise .6s ease forwards;
+  }
+  .headline {
+    font-size: clamp(1.9rem, 3.4vw, 3rem);
+    line-height: 1.16;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  /* word-by-word staggered slide-up mask */
+  .headline .w {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    padding: 0 0.06em;
+    margin: 0 -0.06em;
+  }
+  .headline .w > span {
+    display: inline-block;
+    transform: translateY(105%);
+    will-change: transform;
+  }
+  .reveal .headline .w > span {
+    animation: wordUp .62s cubic-bezier(.2, .7, .2, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+
+  /* emphasized phrase: lighter italic + a teal-gold underline that draws itself */
+  .em { position: relative; font-weight: 400; font-style: italic; }
+  .em .ul {
+    position: absolute;
+    left: 0.04em; right: 0.04em; bottom: 0.02em;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left center;
+    border-radius: 2px;
+  }
+  .reveal .em .ul {
+    animation: drawLine .55s cubic-bezier(.4, 0, .2, 1) forwards;
+    animation-delay: var(--ul, 1500ms);
+  }
+
+  /* footer: sprout + a single thin animated accent line */
+  .brand__foot {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    opacity: 0;
+    transform: translateY(6px);
+    animation: rise .6s ease forwards;
+    animation-delay: 1.7s;
+  }
+  .sprout {
+    flex: none;
+    width: 22px; height: 22px;
+    color: color-mix(in srgb, var(--gold) 78%, #fff);
+  }
+  .accent {
+    height: 1px;
+    flex: 1;
+    background: color-mix(in srgb, #fff 26%, transparent);
+    transform-origin: left center;
+    transform: scaleX(0);
+    animation: drawLine .9s ease forwards;
+    animation-delay: 1.85s;
+  }
+  .brand__caption {
+    font-size: 0.82rem;
+    color: color-mix(in srgb, #fff 68%, var(--teal));
+    white-space: nowrap;
+  }
+
+  @keyframes wordUp   { from { transform: translateY(105%); } to { transform: translateY(0); } }
+  @keyframes rise     { to { opacity: 1; transform: translateY(0); } }
+  @keyframes drawLine { to { transform: scaleX(1); } }
+
+  /* RIGHT — clean sign-in form */
+  .panel {
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(2rem, 5vw, 4rem);
+  }
+  .form-wrap { width: 100%; max-width: 380px; }
+  .form-mark { height: 26px; margin-bottom: 2rem; }
+  .form-mark img { height: 100%; width: auto; display: block; }
+  .form-title { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 0.3rem; }
+  .form-sub { color: var(--ink-2); font-size: 0.92rem; margin: 0 0 1.8rem; }
+
+  form .field + .field { margin-top: 1.05rem; }
+  .pw-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .pw-toggle {
+    border: none; background: none; cursor: pointer;
+    color: var(--teal-deep); font-size: 0.78rem; font-weight: 600;
+    padding: 2px 4px; border-radius: 6px;
+  }
+  .pw-toggle:hover { text-decoration: underline; }
+
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 1.1rem 0 1.5rem;
+  }
+  .check { display: inline-flex; align-items: center; gap: 0.55rem; cursor: pointer; font-size: 0.9rem; color: var(--ink-2); user-select: none; }
+  .check input { width: 18px; height: 18px; accent-color: var(--teal-deep); cursor: pointer; }
+
+  .divider { display: flex; align-items: center; gap: 0.9rem; margin: 1.35rem 0; color: var(--ink-3); font-size: 0.8rem; }
+  .divider::before, .divider::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+
+  .sso-icon { width: 17px; height: 17px; flex: none; }
+  .btn-primary[aria-busy="true"] { opacity: 0.82; cursor: default; }
+
+  .support { margin-top: 1.8rem; font-size: 0.82rem; color: var(--ink-3); text-align: center; }
+  .support .link { font-weight: 600; }
+
+  /* ---- responsive: stack, form-first on phone ---- */
+  @media (max-width: 820px) {
+    .stage { grid-template-columns: 1fr; }
+    .panel { order: 1; padding: 2.4rem 1.5rem 1.8rem; }
+    .brand { order: 2; min-height: 360px; padding: 2.4rem 1.5rem 2.6rem; }
+    .brand__hero { margin: 1.5rem 0; }
+    .headline { font-size: clamp(1.7rem, 7vw, 2.3rem); }
+    .form-wrap { max-width: 420px; margin: 0 auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .headline .w > span { transform: none !important; animation: none !important; }
+    .em .ul { transform: scaleX(1) !important; animation: none !important; }
+    .brand__eyebrow, .brand__foot, .accent { opacity: 1 !important; transform: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <!-- LEFT: brand panel -->
+    <section class="brand" aria-label="Fostr">
+      <div class="brand__mark">
+        <img src="fostr-wordmark-white.png" alt="Fostr">
+      </div>
+
+      <div class="brand__hero">
+        <p class="brand__eyebrow">Case management, quietly</p>
+        <h1 class="headline" id="headline" aria-label="The paperwork stays here, so more of your day can reach a kid.">
+          <!-- words injected by JS from data-line for the animation; text above is the accessible label -->
+        </h1>
+      </div>
+
+      <div class="brand__foot">
+        <svg class="sprout" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 21v-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M12 13c0-3.3-2.7-6-6-6 0 3.3 2.7 6 6 6z" fill="currentColor" opacity=".9"/>
+          <path d="M12 12c0-3 2.4-5.4 5.4-5.4C17.4 9.6 15 12 12 12z" fill="currentColor"/>
+        </svg>
+        <span class="accent" aria-hidden="true"></span>
+        <span class="brand__caption">Built with caseworkers</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: sign-in form -->
+    <section class="panel">
+      <div class="form-wrap">
+        <div class="form-mark"><img src="fostr-wordmark-black.png" alt="Fostr"></div>
+        <h2 class="form-title">Sign in</h2>
+        <p class="form-sub">Pick up where your caseload left off.</p>
+
+        <form id="signin" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="you@agency.gov">
+          </div>
+
+          <div class="field">
+            <div class="pw-head">
+              <label for="password">Password</label>
+              <button type="button" class="pw-toggle" id="pwToggle" aria-pressed="false" aria-controls="password">Show</button>
+            </div>
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Your password">
+          </div>
+
+          <div class="row">
+            <label class="check">
+              <input type="checkbox" id="keep" name="keep">
+              Keep me signed in
+            </label>
+            <a class="link" href="#" style="font-size:0.85rem;">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submit">Sign in</button>
+
+          <div class="divider">or</div>
+
+          <button type="button" class="btn-ghost" id="sso">
+            <svg class="sso-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="10.5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            Sign in with agency SSO
+          </button>
+
+          <p class="support">Trouble signing in? Ask your agency admin.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      // Build the kinetic headline. The <h1> carries the full aria-label already,
+      // so we mark the injected words aria-hidden to avoid double reading.
+      var LINE = [
+        { t: "The" }, { t: "paperwork" }, { t: "stays" }, { t: "here," },
+        { t: "so" }, { t: "more" }, { t: "of" }, { t: "your" },
+        { t: "day" },
+        { t: "can", em: true }, { t: "reach", em: true }, { t: "a", em: true }, { t: "kid.", em: true }
+      ];
+
+      var h = document.getElementById("headline");
+      var STEP = 90;      // ms between words
+      var BASE = 260;     // initial delay
+      var lastEmIndex = -1;
+      LINE.forEach(function (w, i) { if (w.em) lastEmIndex = i; });
+
+      LINE.forEach(function (word, i) {
+        var wrap = document.createElement("span");
+        wrap.className = "w";
+        wrap.setAttribute("aria-hidden", "true");
+
+        var inner = document.createElement("span");
+        inner.style.setProperty("--d", (BASE + i * STEP) + "ms");
+
+        if (word.em) {
+          var em = document.createElement("span");
+          em.className = "em";
+          em.textContent = word.t;
+          // underline draws once, timed to when the last emphasized word lands
+          if (i === lastEmIndex) {
+            var ul = document.createElement("span");
+            ul.className = "ul";
+            ul.style.setProperty("--ul", (BASE + i * STEP + 520) + "ms");
+            em.appendChild(ul);
+          }
+          inner.appendChild(em);
+        } else {
+          inner.textContent = word.t;
+        }
+
+        wrap.appendChild(inner);
+        h.appendChild(wrap);
+        // trailing space between words
+        h.appendChild(document.createTextNode(" "));
+      });
+
+      // Kick the reveal (a rAF so initial transforms are committed first)
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduce) {
+        document.querySelector(".brand").classList.add("reveal");
+      } else {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            document.querySelector(".brand").classList.add("reveal");
+          });
+        });
+      }
+
+      // ---- form behavior ----
+      var pw = document.getElementById("password");
+      var toggle = document.getElementById("pwToggle");
+      toggle.addEventListener("click", function () {
+        var showing = pw.type === "text";
+        pw.type = showing ? "password" : "text";
+        toggle.textContent = showing ? "Show" : "Hide";
+        toggle.setAttribute("aria-pressed", String(!showing));
+      });
+
+      var form = document.getElementById("signin");
+      var submit = document.getElementById("submit");
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (submit.getAttribute("aria-busy") === "true") return;
+        submit.setAttribute("aria-busy", "true");
+        submit.textContent = "Signing in…";
+        setTimeout(function () {
+          submit.removeAttribute("aria-busy");
+          submit.textContent = "Sign in";
+        }, 1200);
+      });
+
+      document.getElementById("sso").addEventListener("click", function () {
+        // no-op placeholder for the SSO handoff
+      });
+    })();
+  </script>
+</body>
+</html>

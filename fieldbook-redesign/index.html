@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr Fieldbook — 5 redesign directions</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  body { min-height: 100vh; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 64px 28px 100px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .brand svg { color: var(--teal); }
+  .brand span { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(2rem, 4vw, 2.9rem); font-weight: 600; letter-spacing: -0.025em; margin: 18px 0 12px; line-height: 1.08; max-width: 20ch; }
+  .lede { font-size: 1.06rem; color: var(--ink-2); max-width: 68ch; line-height: 1.62; margin: 0 0 10px; }
+  .goals { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 8px; }
+  .goal { font-size: var(--fs-meta); color: var(--teal-deep); border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent); border-radius: 999px; padding: 5px 12px; background: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 34px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 22px 20px; transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+  a.card:hover { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); transform: translateY(-2px); box-shadow: 0 14px 34px rgba(23,58,57,0.09); }
+  .vnum { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .vnum b { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.01em; }
+  .vname { font-size: 1.22rem; font-weight: 600; letter-spacing: -0.015em; margin: 0 0 8px; }
+  .vdesc { font-size: 0.95rem; color: var(--ink-2); line-height: 1.55; margin: 0; }
+  .open { margin-top: 16px; font-size: var(--fs-meta); font-weight: 600; color: var(--teal-deep); display: inline-flex; align-items: center; gap: 6px; }
+  .foot { margin-top: 40px; font-size: var(--fs-meta); color: var(--ink-3); }
+  .foot a { font-weight: 600; }
+</style>
+</head>
+<body class="dotgrid">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6c8 0 8 6 8 12"/><path d="M20 6c-8 0-8 6-8 12"/></svg>
+      <span>Fostr Fieldbook</span>
+    </div>
+    <h1>Five directions for the case screen</h1>
+    <p class="lede">Same case, same data — five ways to present it. Every direction obeys the same rules: one editable canvas, no boxes-inside-boxes, minimal colour, calm and scalable for social workers on iPad. Open each, then tell me the one that feels right (or the parts you'd mix).</p>
+    <div class="goals">
+      <span class="goal">One canvas, editable in place</span>
+      <span class="goal">No nested boxes</span>
+      <span class="goal">Calm &amp; minimal</span>
+      <span class="goal">Scalable on iPad</span>
+      <span class="goal">All the data, still there</span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <p class="foot">Research grounding these directions: <a href="research.md">research.md</a> · Data + tokens shared across all five.</p>
+  </div>
+
+  <script>
+    const VARIANTS = [
+      { n: 1, file: "v1.html", name: "Clean Document",
+        desc: "The case as one beautifully set document. No cards at all — whitespace, hairlines and type do the work. You write straight into the top of the record." },
+      { n: 2, file: "v2.html", name: "One Canvas — write-in-stream",
+        desc: "Everything in a single column. What you type becomes the newest note in the very stream you're reading. No separate note panel, ever. The strongest 'it's all one box' answer." },
+      { n: 3, file: "v3.html", name: "Unified Two-Pane",
+        desc: "Read on the left, write on the right — but one flat sheet split by a hairline, not two floating shells. Proves a split can still be box-free and calm." },
+      { n: 4, file: "v4.html", name: "Calm Records",
+        desc: "Dense but calm, Linear-grade. Built to scan a big caseload fast: aligned records, hairline rows, quiet monospace seals. Most scalable." },
+      { n: 5, file: "v5.html", name: "Progressive Focus",
+        desc: "Radical calm. Shows only the essentials; the AI summary, history and seal details open in place on demand. Almost empty until you ask for more." },
+    ];
+    const grid = document.getElementById("grid");
+    grid.innerHTML = VARIANTS.map(v => `
+      <a class="card" href="${v.file}">
+        <div class="vnum"><span class="count">${v.n}</span><b>Direction ${v.n}</b></div>
+        <div class="vname">${v.name}</div>
+        <p class="vdesc">${v.desc}</p>
+        <span class="open">Open ${v.file} →</span>
+      </a>`).join("");
+  </script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr Fieldbook — caseload pulse (login home)</title>
+<style>
+  :root{
+    --teal:#5DA1A1; --teal-deep:#2F6B6B; --gold:#E4BE79; --ink:#1A2323; --muted:#4A5A5A;
+    --paper:#F5F8F8; --surface:#ffffff; --border:#DCE4E4;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --head:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(120% 80% at 50% 0%, #e9f3f1, #dfe9e7 60%, #d5e0de);
+    font-family:var(--sans);color:var(--ink);display:grid;place-items:center;min-height:100%;padding:24px;-webkit-font-smoothing:antialiased}
+  .phone{position:relative;width:390px;height:800px;max-height:92vh;border-radius:52px;background:
+     radial-gradient(130% 90% at 50% -6%, #f2faf8 0%, #eef5f3 42%, #f5f8f8 100%);
+    box-shadow:0 40px 120px rgba(26,35,35,.32), inset 0 0 0 10px #0e1413, inset 0 0 0 12px #2a3230;
+    overflow:hidden;display:flex;flex-direction:column}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:16px 30px 2px;font-size:13px;font-weight:600}
+  .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:112px;height:30px;background:#0e1413;border-radius:20px;z-index:5}
+  .screen{flex:1;display:flex;flex-direction:column;padding:8px 24px 0;position:relative;overflow:hidden}
+  .head{display:flex;align-items:center;gap:9px;margin:14px 2px 2px}
+  .head h1{font-family:var(--head);font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin:0;color:var(--ink)}
+  .greet{font-size:.82rem;color:var(--muted);margin:2px 2px 0}
+
+  /* orb */
+  .orbwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;user-select:none}
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  .orbstage{position:relative;width:262px;height:262px;display:grid;place-items:center;cursor:pointer;animation:breathe 5s ease-in-out infinite}
+  canvas.orb{width:250px;height:250px;border-radius:50%;display:block;
+    box-shadow:0 26px 64px rgba(47,107,107,.26), inset 0 2px 12px rgba(255,255,255,.5)}
+  .pulse{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;margin-top:18px;transition:color .5s}
+  .state{font-family:var(--head);font-weight:700;font-size:1.5rem;letter-spacing:-.02em;margin-top:7px;text-align:center;transition:color .5s}
+  .detail{font-size:.86rem;color:var(--muted);margin-top:5px;text-align:center}
+
+  /* most-urgent primary action */
+  .action{margin:16px 4px 4px;width:calc(100% - 8px);display:flex;align-items:center;gap:12px;
+    padding:13px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--border);
+    box-shadow:0 8px 22px rgba(26,35,35,.07);cursor:pointer;text-align:left;transition:transform .12s, border-color .15s}
+  .action:active{transform:scale(.985)}
+  .action .dot{width:10px;height:10px;border-radius:50%;flex:none}
+  .action .who{font-weight:600;font-size:.95rem}
+  .action .meta{font-size:.76rem;color:var(--muted);margin-top:1px}
+  .action .go{margin-left:auto;color:var(--teal-deep);font-size:1.1rem}
+  .actlabel{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#9aa39f;margin:14px 4px 0}
+
+  .tabbar{display:flex;justify-content:center;gap:44px;padding:12px 0 24px;margin-top:auto}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#9aa39f;font-weight:600}
+  .tab.on{color:var(--teal-deep)}
+  .tab svg{width:22px;height:22px}
+
+  /* queue panel */
+  .queue{position:absolute;inset:0;background:var(--paper);transform:translateY(100%);transition:transform .4s cubic-bezier(.22,1,.36,1);
+    display:flex;flex-direction:column;padding:8px 20px 0;z-index:9;
+    background-image:radial-gradient(circle, color-mix(in srgb, var(--teal) 40%, transparent) 1.3px, transparent 1.5px);background-size:22px 22px}
+  .queue.on{transform:none}
+  .qhead{display:flex;align-items:center;gap:10px;padding:44px 2px 12px}
+  .qback{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:#fff;display:grid;place-items:center;cursor:pointer;font-size:1.1rem}
+  .qhead h2{font-family:var(--head);font-size:1.3rem;font-weight:700;margin:0}
+  .qlist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:20px}
+  .qrow{background:#fff;border:1px solid var(--border);border-radius:16px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 10px rgba(26,35,35,.05)}
+  .qrow .nm{font-weight:600;font-size:.95rem}
+  .qrow .mt{font-size:.78rem;color:var(--muted);margin-top:1px}
+  .qdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle}
+  .hint{padding:8px 0 16px;text-align:center;font-size:11px;color:#9aa39f}
+
+  /* data simulator */
+  .sim{position:fixed;top:22px;right:22px;width:214px;background:rgba(255,255,255,.88);backdrop-filter:blur(12px);
+    border:1px solid var(--border);border-radius:16px;padding:15px 16px;box-shadow:0 18px 50px rgba(26,35,35,.16);z-index:50}
+  .sim .h{font-family:var(--head);font-weight:700;font-size:.82rem;margin-bottom:3px}
+  .sim .sub{font-size:.64rem;color:var(--muted);margin-bottom:12px;line-height:1.4}
+  .sim label{display:flex;flex-direction:column;gap:5px;font-size:.64rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .sim label b{color:var(--teal-deep);font-variant-numeric:tabular-nums}
+  .sim input[type=range]{accent-color:var(--teal);width:100%}
+  @media (prefers-reduced-motion:reduce){.orbstage{animation:none}*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span>￼ ￼ ￼</span></div>
+  <div class="screen">
+    <div class="head">
+      <h1>Good morning, Jaz</h1>
+      <svg width="26" height="17" viewBox="112 122 32 20" fill="none" style="overflow:visible">
+        <path d="M128.571 140V131.952C127.175 129.999 121.029 125.903 116 127.619" stroke="#5DA1A1" stroke-width="4.19" stroke-linecap="round"/>
+        <path d="M128.571 131.952C130.899 129.222 137.79 125.698 141.143 127.485" stroke="#5DA1A1" stroke-width="4.19" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="greet">Here's your caseload right now.</div>
+
+    <div class="orbwrap">
+      <div class="orbstage" id="orbstage" title="tap to open the queue">
+        <canvas class="orb" id="orb" width="500" height="500"></canvas>
+      </div>
+      <div class="pulse" id="pulse">CASELOAD PULSE</div>
+      <div class="state" id="state">On top of it</div>
+      <div class="detail" id="detail">3 need you today · 12 to review</div>
+    </div>
+
+    <div class="actlabel">Start with</div>
+    <button class="action" id="action">
+      <span class="dot" id="aDot" style="background:#C0632F"></span>
+      <span><span class="who" id="aWho">Marcus Alvarez</span><span class="meta" id="aMeta">14 yrs · 1 day overdue</span></span>
+      <span class="go">→</span>
+    </button>
+
+    <div class="tabbar">
+      <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>Home</div>
+      <div class="tab" id="tabCases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h5"/></svg>Cases</div>
+    </div>
+
+    <div class="queue" id="queue">
+      <div class="qhead"><button class="qback" id="qback">‹</button><h2>What needs you</h2></div>
+      <div class="qlist" id="qlist"></div>
+      <div class="hint">ranked by urgency · the calm home is one tap away</div>
+    </div>
+  </div>
+</div>
+
+<div class="sim">
+  <div class="h">Live data</div>
+  <div class="sub">Drag to simulate your caseload — watch the orb respond.</div>
+  <label>Urgency pressure <b id="u1v">55</b></label><input type="range" id="u1" min="0" max="100" value="55">
+  <label>Review backlog <b id="u2v">60</b></label><input type="range" id="u2" min="0" max="100" value="60">
+  <label>Momentum · filed today <b id="u3v">25</b></label><input type="range" id="u3" min="0" max="100" value="25">
+</div>
+
+<script>
+(function(){
+  // ---------- caseload state (would come from the Case Ledger API) ----------
+  var S = { urgency:0.55, backlog:0.60, momentum:0.25 };
+  var CASES = [
+    {n:"Marcus Alvarez", age:14, due:-1, c:"#C0632F"},
+    {n:"Aaliyah Nguyen", age:9,  due:0,  c:"#C0632F"},
+    {n:"Priya Desai",    age:6,  due:2,  c:"#B4802E"},
+    {n:"DeShawn Carter", age:12, due:3,  c:"#B4802E"},
+    {n:"Lucia Romano",   age:8,  due:5,  c:"#2F6B6B"},
+    {n:"Emma Sullivan",  age:5,  due:6,  c:"#2F6B6B"},
+  ];
+  function dueText(d){ return d<0 ? Math.abs(d)+" day"+(d<-1?"s":"")+" overdue" : d===0 ? "due today" : "due in "+d+"d"; }
+
+  // ---------- the pulse orb (WebGL caustic glass, data-driven) ----------
+  var cvs=document.getElementById("orb");
+  var gl=cvs.getContext("webgl2",{alpha:true,premultipliedAlpha:false,antialias:true});
+  var SZ=cvs.width;
+  var VERT="#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+  var FRAG=[
+   "#version 300 es","precision highp float;","out vec4 o;",
+   "uniform vec2 uRes; uniform float uPhase,uWarm,uGlow,uCalm;",
+   "uniform vec3 uTeal,uGold;",
+   "mat2 rot(float a){float c=cos(a),s=sin(a);return mat2(c,s,-s,c);}",
+   "float caustic(vec2 pp,float t){ vec2 q=pp*5.2; float v=0.;",
+   "  for(int i=0;i<5;i++){ float fi=float(i); q=rot(.6)*q+vec2(sin(t+fi),cos(t*.8+fi)); v+=sin(q.x+t)*cos(q.y-t);} return .5+.22*v; }",
+   "void main(){ vec2 uv=gl_FragCoord.xy/uRes; vec2 p=uv-.5; float len=length(p); float R=.48;",
+   "  float amask=smoothstep(R+.004,R-.004,len); if(amask<=0.){o=vec4(0.);return;}",
+   "  float t=uPhase; float b=0.05;",   // gaussian blur radius on the internal shading
+   "  float v = caustic(p,t)*0.36",
+   "    + (caustic(p+vec2(b,0.),t)+caustic(p+vec2(-b,0.),t)+caustic(p+vec2(0.,b),t)+caustic(p+vec2(0.,-b),t))*0.12",
+   "    + (caustic(p+vec2(b,b),t)+caustic(p+vec2(-b,b),t)+caustic(p+vec2(b,-b),t)+caustic(p+vec2(-b,-b),t))*0.04;",
+   "  vec3 water=mix(uTeal,uGold, clamp(uWarm*(.35+.65*v),0.,1.));",
+   "  float hl=pow(clamp(v,0.,1.),3.2);",   // softer, spread-out caustic light
+   "  vec3 col=water + hl*(.24+uGlow*.5);",
+   "  float nz=sqrt(max(0.,1.-(len/R)*(len/R))); vec3 nrm=normalize(vec3(p/R,nz*.9));",
+   "  vec3 ray=vec3(0.,0.,-1.); vec3 L=normalize(vec3(-.4,-.5,.8));",
+   "  float spec=pow(max(dot(reflect(ray,-nrm),L),0.),16.); float fres=pow(1.-nz,2.5);",
+   "  col+=spec*.28; col=mix(col,vec3(1.),fres*.10);",
+   "  float sheen=smoothstep(.4,0.,length(uv-vec2(.35,.28))); col=mix(col,col+vec3(1.),sheen*.12);",
+   "  float ring=smoothstep(R-.06,R-.01,len)*smoothstep(R+.01,R-.02,len);",
+   "  vec3 irid=.5+.5*cos(6.2831*(uPhase*.05+len*2.0+vec3(0.,.33,.67)));",
+   "  col+=irid*ring*(.28+uGlow*.5);",
+   "  col=mix(col, col*vec3(.92,1.,1.), uCalm*.15);",
+   "  col*=1.-smoothstep(.32,R,len)*.05;",
+   "  o=vec4(clamp(col,0.,1.),amask); }"].join("\n");
+  function sh(t,s){var x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))console.warn(gl.getShaderInfoLog(x));return x;}
+  var prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,VERT));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FRAG));gl.linkProgram(prog);gl.useProgram(prog);
+  var vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  var pl=gl.getAttribLocation(prog,"p");gl.enableVertexAttribArray(pl);gl.vertexAttribPointer(pl,2,gl.FLOAT,false,0,0);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  var U={};["uRes","uPhase","uWarm","uGlow","uCalm","uTeal","uGold"].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+  var TEAL=[0.365,0.631,0.631], GOLD=[0.894,0.745,0.475];
+
+  var phase=0, speed=1, warm=0.4, glow=0.5, calm=0.25, last=0;
+  function frame(ts){ var dt=last?Math.min((ts-last)/1000,0.05):0.016; last=ts;
+    // one axis: how full is the plate. Low load -> turquoise + slow; high load -> yellow + livelier.
+    var load = clamp(S.urgency*0.6 + S.backlog*0.4 - S.momentum*0.5, 0, 1);
+    var tWarm  = clamp(load*1.25, 0, 1);   // 0 = pure turquoise, 1 = yellow
+    var tSpeed = 0.30 + load*1.7;          // slow when calm, faster when loaded
+    var tGlow  = 0.18 + S.backlog*0.7;
+    var tCalm  = 1.0 - load;               // calmer/cooler the emptier the plate
+    speed += (tSpeed-speed)*0.05; warm += (tWarm-warm)*0.05; glow += (tGlow-glow)*0.05; calm += (tCalm-calm)*0.05;
+    phase += dt*speed;
+    gl.viewport(0,0,SZ,SZ);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(prog);
+    gl.uniform2f(U.uRes,SZ,SZ);gl.uniform1f(U.uPhase,phase);gl.uniform1f(U.uWarm,warm);gl.uniform1f(U.uGlow,glow);gl.uniform1f(U.uCalm,calm);
+    gl.uniform3fv(U.uTeal,TEAL);gl.uniform3fv(U.uGold,GOLD);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  function clamp(x,a,b){return Math.max(a,Math.min(b,x));}
+
+  // ---------- read the state into words + the primary action ----------
+  var pulseEl=document.getElementById("pulse"), stateEl=document.getElementById("state"), detailEl=document.getElementById("detail");
+  function updateUI(){
+    var overdue=Math.round(S.urgency*4), dueToday=Math.round(S.urgency*2), review=Math.round(S.backlog*18), filed=Math.round(S.momentum*8);
+    var load=clamp(S.urgency*0.62 + S.backlog*0.34 - S.momentum*0.30, 0, 1);
+    var label, colr;
+    if(load<0.34){ label="On top of it"; colr="#2F6B6B"; }
+    else if(load<0.64){ label="Getting there"; colr="#7a6a2e"; }
+    else { label="Needs you now"; colr="#B4551F"; }
+    stateEl.textContent=label; stateEl.style.color=colr; pulseEl.style.color=colr;
+    detailEl.textContent=(overdue+dueToday)+" need you today · "+review+" to review"+(filed?" · "+filed+" filed":"");
+    // most-urgent = earliest due
+    var top=CASES.slice().sort(function(a,b){return a.due-b.due;})[0];
+    document.getElementById("aWho").textContent=top.n;
+    document.getElementById("aMeta").textContent=top.age+" yrs · "+dueText(top.due);
+    document.getElementById("aDot").style.background=top.c;
+  }
+
+  // ---------- queue (tap the orb) ----------
+  var queue=document.getElementById("queue"), qlist=document.getElementById("qlist");
+  function renderQueue(){ qlist.innerHTML="";
+    CASES.slice().sort(function(a,b){return a.due-b.due;}).forEach(function(c){
+      var row=document.createElement("div"); row.className="qrow";
+      row.innerHTML='<div><div class="nm"><span class="qdot" style="background:'+c.c+'"></span>'+c.n+'</div>'+
+        '<div class="mt">'+c.age+' yrs · '+dueText(c.due)+'</div></div><div class="mt" style="font-family:var(--mono)">'+c.age+'/11</div>';
+      qlist.appendChild(row);
+    });
+  }
+  function openQueue(){ renderQueue(); queue.classList.add("on"); }
+  function closeQueue(){ queue.classList.remove("on"); }
+  document.getElementById("orbstage").addEventListener("click", openQueue);
+  document.getElementById("action").addEventListener("click", openQueue);
+  document.getElementById("tabCases").addEventListener("click", openQueue);
+  document.getElementById("qback").addEventListener("click", closeQueue);
+
+  // ---------- data simulator ----------
+  function bind(id, key){ var s=document.getElementById(id), out=document.getElementById(id+"v");
+    s.addEventListener("input", function(){ out.textContent=s.value; S[key]=parseFloat(s.value)/100; updateUI(); });
+  }
+  bind("u1","urgency"); bind("u2","backlog"); bind("u3","momentum");
+  updateUI();
+})();
+</script>
+</body>
+</html>

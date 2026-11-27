@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Instrument Panel — Case Ledger</title>
+<style>
+  :root{
+    --bg:#141D1A; --panel:#1A2621; --panel2:#20302A; --line:rgba(233,243,239,.10); --line2:rgba(233,243,239,.06);
+    --ink:#E7F0EC; --ink2:#93A69E; --ink3:#6c7d76;
+    --teal:#5DA1A1; --saved:#7FD8B0; --amber:#D6A24A; --clay:#D97A57; --slate:#6E90A6;
+    --sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+    padding:clamp(16px,3vw,32px);line-height:1.45}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:1120px;margin:0 auto}
+  header.bar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  .title .eye{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--teal)}
+  .title h1{margin:5px 0 0;font-size:1.35rem;font-weight:600;letter-spacing:-.01em}
+  .title .sub{font-size:.82rem;color:var(--ink2);margin-top:2px}
+  /* scope toggle */
+  .scope{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .scope button{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);
+    background:none;border:0;border-radius:999px;padding:7px 15px;cursor:pointer;transition:all .15s ease}
+  .scope button[aria-pressed=true]{background:var(--teal);color:#08130f;font-weight:600}
+  .scope button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .grid{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .card .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
+  /* hero */
+  .hero{grid-column:span 1;grid-row:span 2;display:flex;flex-direction:column;justify-content:space-between}
+  .hero .big{font-size:clamp(2.6rem,7vw,4rem);font-weight:600;line-height:1;color:var(--saved);margin:8px 0 2px}
+  .hero .big small{font-size:1.4rem;color:var(--ink2);font-weight:500}
+  .hero .meta{display:flex;gap:22px;margin-top:10px;font-size:.82rem;color:var(--ink2)}
+  .hero .meta b{color:var(--ink);font-weight:600}
+  .spark{margin-top:16px}
+  .tip{position:fixed;pointer-events:none;background:#0c1512;border:1px solid var(--line);border-radius:7px;
+    padding:6px 9px;font-size:11px;font-family:var(--mono);color:var(--ink);opacity:0;transition:opacity .12s;z-index:20;white-space:nowrap}
+  /* stat tiles */
+  .tile .v{font-size:1.9rem;font-weight:600;margin-top:6px}
+  .tile .d{font-size:.78rem;color:var(--ink2);margin-top:3px}
+  .tile .v.attn{color:var(--amber)}
+  /* reuse bar */
+  .reuse{grid-column:span 2}
+  .rbar{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:14px 0 12px;box-shadow:inset 0 0 0 1px var(--line)}
+  .rseg{position:relative;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;
+    color:#08130f;font-weight:600;transition:filter .15s ease;cursor:default}
+  .rseg:hover{filter:brightness(1.12)}
+  .rlegend{display:flex;gap:18px;flex-wrap:wrap;font-size:.8rem;color:var(--ink2)}
+  .rlegend span{display:inline-flex;align-items:center;gap:6px}
+  .rlegend i{width:9px;height:9px;border-radius:2px}
+  /* pipeline */
+  .pipe{display:flex;gap:0;margin-top:14px}
+  .stage{flex:1;position:relative;padding:12px 10px;text-align:center;border-right:1px solid var(--line2)}
+  .stage:last-child{border-right:0}
+  .stage .sc{font-size:1.6rem;font-weight:600;font-family:var(--mono)}
+  .stage .sn{font-size:.72rem;color:var(--ink2);margin-top:3px;text-transform:uppercase;letter-spacing:.08em}
+  .stage .sb{font-size:.72rem;color:var(--ink3);margin-top:5px;line-height:1.3}
+  .stage .rail{height:3px;border-radius:2px;margin-top:9px;background:var(--teal);opacity:.85}
+  h2.s{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);margin:0}
+  .knob{display:flex;align-items:center;gap:12px;margin-top:14px;font-size:.82rem;color:var(--ink2)}
+  .knob input{flex:1;accent-color:var(--teal)}
+  @media (max-width:860px){.grid{grid-template-columns:1fr 1fr}.hero{grid-column:span 2;grid-row:auto}.reuse{grid-column:span 2}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}.hero,.reuse{grid-column:span 1}.pipe{flex-wrap:wrap}.stage{flex:1 1 40%}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  :focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+</style>
+</head>
+<body>
+<script src="../shared/data.js"></script>
+<div class="tip" id="tip"></div>
+<div class="wrap">
+  <header class="bar">
+    <div class="title"><div class="eye">Fostr Chronicle · Case Ledger</div>
+      <h1>Time returned — <span id="scope-label">your</span> instrument panel</h1>
+      <div class="sub" id="sub"></div></div>
+    <div class="scope" role="group" aria-label="scope">
+      <button id="mine" aria-pressed="true">Mine</button>
+      <button id="agency" aria-pressed="false">Agency</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- hero KPI + sparkline -->
+    <section class="card hero">
+      <div>
+        <div class="lbl">Minutes saved · this month</div>
+        <div class="big num"><span id="hero-min">0</span><small id="hero-hm"></small></div>
+        <div class="meta">
+          <div>all-time&nbsp; <b class="num" id="hero-all"></b></div>
+          <div>per note&nbsp; <b class="num" id="hero-per"></b></div>
+        </div>
+      </div>
+      <div class="spark">
+        <div class="lbl" style="margin-bottom:8px">Saved per working day</div>
+        <svg id="spark" width="100%" height="92" viewBox="0 0 520 92" preserveAspectRatio="none" role="img" aria-label="minutes saved per day"></svg>
+      </div>
+    </section>
+
+    <!-- stat tiles -->
+    <section class="card tile"><div class="lbl">Notes filed</div><div class="v num" id="t-filed">0</div><div class="d">this month</div></section>
+    <section class="card tile"><div class="lbl">Fields auto-filled</div><div class="v num" id="t-fields">0</div><div class="d" id="t-fields-d"></div></section>
+    <section class="card tile"><div class="lbl">Corrections</div><div class="v num attn" id="t-corr">0</div><div class="d">auto-fill was wrong · accuracy signal</div></section>
+    <section class="card tile"><div class="lbl">Completion</div><div class="v num" id="t-comp">0%</div><div class="d">updated ÷ caseload</div></section>
+
+    <!-- reuse breakdown -->
+    <section class="card reuse">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <h2 class="s">Where the time comes from — a note's 11 fields</h2>
+        <span class="num" style="color:var(--saved);font-size:.82rem" id="reuse-head"></span>
+      </div>
+      <div class="rbar" id="rbar"></div>
+      <div class="rlegend" id="rlegend"></div>
+      <div class="knob"><span>per-field retype cost</span>
+        <input type="range" id="sec" min="20" max="60" step="5" value="35" aria-label="seconds per field">
+        <span class="num"><span id="sec-v">35</span>s → <span id="sec-out" style="color:var(--saved)"></span> saved</span>
+      </div>
+    </section>
+
+    <!-- pipeline -->
+    <section class="card" style="grid-column:span 3">
+      <h2 class="s">The pipeline — a note's journey</h2>
+      <div class="pipe" id="pipe"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  var L=window.LEDGER, M=L.model, F=L.fmt, SM=L.sourceMeta;
+  var SCALE=8.2; // agency ≈ 8× a single worker
+  var scope="mine";
+  var tip=document.getElementById("tip");
+  function showTip(x,y,html){tip.innerHTML=html;tip.style.left=(x+12)+"px";tip.style.top=(y+12)+"px";tip.style.opacity=1;}
+  function hideTip(){tip.style.opacity=0;}
+  var RM=matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+  function countUp(el,to,dur,fmt){ if(RM){el.textContent=fmt?fmt(to):to;return;}
+    var s=performance.now(); function step(t){var p=Math.min(1,(t-s)/dur);var v=to*(1-Math.pow(1-p,3));
+      el.textContent=fmt?fmt(v):Math.round(v);if(p<1)requestAnimationFrame(step);} requestAnimationFrame(step);}
+
+  function scaled(n){return scope==="agency"?Math.round(n*SCALE):n;}
+
+  function paint(){
+    var min=scaled(L.month.minutesSaved), all=scaled(L.allTime.minutesSaved),
+        filed=scaled(L.month.filed), fields=scaled(L.month.fieldsAutofilled),
+        corr=scaled(L.month.corrections);
+    document.getElementById("scope-label").textContent = scope==="agency"?"the agency's":"your";
+    document.getElementById("sub").textContent = scope==="agency"
+      ? "Region 4 · ~"+scaled(L.worker.caseload)+" youth across the team" : L.worker.name+" · "+L.worker.team;
+    countUp(document.getElementById("hero-min"),min,900,function(v){return Math.round(v).toLocaleString();});
+    document.getElementById("hero-hm").textContent="  "+F.hm(min);
+    document.getElementById("hero-all").textContent=F.hm(all);
+    document.getElementById("hero-per").textContent=M.perNoteSavedMin+"m";
+    countUp(document.getElementById("t-filed"),filed,700);
+    countUp(document.getElementById("t-fields"),fields,700,function(v){return Math.round(v).toLocaleString();});
+    document.getElementById("t-fields-d").textContent="≈ "+L.sources.system.toFixed(1)+" of 11 per note";
+    countUp(document.getElementById("t-corr"),corr,700);
+    document.getElementById("t-comp").textContent=Math.round(L.month.completionRate*100)+"%";
+    drawSpark(); drawPipe();
+  }
+
+  // sparkline
+  function drawSpark(){
+    var d=L.daily, W=520,H=92,pad=6, mult=scope==="agency"?SCALE:1;
+    var max=Math.max.apply(null,d.map(function(x){return x.m;}))*1 || 1;
+    var xs=function(i){return pad+i*(W-2*pad)/(d.length-1);};
+    var ys=function(v){return H-8-(v/ (max))*(H-20);};
+    var pts=d.map(function(x,i){return xs(i)+","+ys(x.m);});
+    var area="M"+pad+","+(H-4)+" L"+pts.join(" L")+" L"+(W-pad)+","+(H-4)+" Z";
+    var svg=document.getElementById("spark");
+    var grid=""; for(var g=0;g<3;g++){var yy=8+g*(H-16)/2; grid+='<line x1="0" y1="'+yy+'" x2="'+W+'" y2="'+yy+'" stroke="rgba(233,243,239,.06)"/>';}
+    var dots=d.map(function(x,i){return '<circle data-i="'+i+'" cx="'+xs(i)+'" cy="'+ys(x.m)+'" r="'+(i===d.length-1?4:3)+'" fill="'+(i===d.length-1?"#7FD8B0":"#3f6d5f")+'"/>';}).join("");
+    svg.innerHTML=grid+'<path d="'+area+'" fill="rgba(127,216,176,.14)"/>'+
+      '<polyline points="'+pts.join(" ")+'" fill="none" stroke="#5DA1A1" stroke-width="2" stroke-linejoin="round"/>'+dots;
+    Array.prototype.forEach.call(svg.querySelectorAll("circle"),function(c){
+      c.style.cursor="pointer";
+      c.addEventListener("mousemove",function(e){var x=L.daily[+c.dataset.i]; showTip(e.clientX,e.clientY,x.d+" · <b style=\"color:#7FD8B0\">"+Math.round(x.m*mult)+"m</b>");});
+      c.addEventListener("mouseleave",hideTip);
+    });
+  }
+
+  // reuse bar
+  function drawReuse(){
+    var s=L.sources, tot=s.system+s.dictated+s.needs_look+s.blank;
+    var order=["system","dictated","needs_look","blank"];
+    var bar=document.getElementById("rbar"); bar.innerHTML="";
+    order.forEach(function(k){
+      var seg=document.createElement("div"); seg.className="rseg";
+      seg.style.flex=s[k]; seg.style.background=SM[k].color;
+      seg.textContent=s[k].toFixed(1);
+      seg.addEventListener("mousemove",function(e){showTip(e.clientX,e.clientY,SM[k].label+" · <b>"+s[k].toFixed(1)+"/11</b> · "+SM[k].note);});
+      seg.addEventListener("mouseleave",hideTip);
+      bar.appendChild(seg);
+    });
+    var leg=document.getElementById("rlegend"); leg.innerHTML="";
+    order.forEach(function(k){leg.innerHTML+='<span><i style="background:'+SM[k].color+'"></i>'+SM[k].label+' — '+SM[k].verb+'</span>';});
+    document.getElementById("reuse-head").textContent="≈ "+s.system.toFixed(1)+" never retyped";
+    knob();
+  }
+  function knob(){
+    var sec=+document.getElementById("sec").value;
+    document.getElementById("sec-v").textContent=sec;
+    var perNote=Math.round(L.sources.system*sec/60*10)/10;
+    document.getElementById("sec-out").textContent=perNote+"m/note";
+  }
+  document.getElementById("sec").addEventListener("input",knob);
+
+  function drawPipe(){
+    var counts={prepare:scaled(L.month.prepared), capture:scaled(2), verify:scaled(3), review:scaled(L.month.inQueue), synchronize:scaled(L.month.filed)};
+    var pipe=document.getElementById("pipe"); pipe.innerHTML="";
+    var max=Math.max.apply(null,Object.keys(counts).map(function(k){return counts[k];}));
+    L.pipeline.forEach(function(st){
+      var c=counts[st.key]||0;
+      var el=document.createElement("div"); el.className="stage";
+      el.innerHTML='<div class="sc">'+c+'</div><div class="sn">'+st.label+'</div><div class="sb">'+st.blurb+'</div>'+
+        '<div class="rail" style="width:'+Math.max(12,(c/max*100))+'%;margin-left:auto;margin-right:auto"></div>';
+      pipe.appendChild(el);
+    });
+  }
+
+  document.getElementById("mine").addEventListener("click",function(){scope="mine";this.setAttribute("aria-pressed","true");document.getElementById("agency").setAttribute("aria-pressed","false");paint();});
+  document.getElementById("agency").addEventListener("click",function(){scope="agency";this.setAttribute("aria-pressed","true");document.getElementById("mine").setAttribute("aria-pressed","false");paint();});
+
+  drawReuse(); paint();
+})();
+</script>
+</body>
+</html>

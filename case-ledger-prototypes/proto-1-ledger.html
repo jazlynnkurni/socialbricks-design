@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Ledger — Case Ledger</title>
+<style>
+  :root{
+    --paper:#ECEFEC; --sheet:#F7F8F6; --ink:#20262A; --ink2:#5b625f;
+    --rule:#C7CEC8; --rule2:#dbe0da;
+    --credit:#2E6E52; --credit-bg:rgba(46,110,82,.10);
+    --debit:#9E3B2E; --debit-bg:rgba(158,59,46,.09);
+    --sys:#3F7E6E; --dict:#B4802E; --need:#C0632F; --blank:#9AA0A6;
+    --sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+    padding:clamp(20px,4vw,44px);line-height:1.45}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .sheet{max-width:1000px;margin:0 auto;background:var(--sheet);border:1px solid var(--rule);
+    border-radius:6px;box-shadow:0 24px 60px rgba(32,38,42,.10);overflow:hidden}
+  /* masthead */
+  .top{padding:clamp(22px,3.4vw,34px) clamp(22px,4vw,40px);border-bottom:2px solid var(--ink);
+    display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+  .brand .eye{font-family:var(--mono);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--sys)}
+  .brand h1{margin:6px 0 2px;font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:600;letter-spacing:-.02em}
+  .brand .sub{font-size:.86rem;color:var(--ink2)}
+  .balance{text-align:right}
+  .balance .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink2)}
+  .balance .big{font-size:clamp(2.2rem,6vw,3.4rem);font-weight:600;color:var(--credit);line-height:1;margin-top:2px}
+  .balance .alt{font-size:.82rem;color:var(--ink2);margin-top:4px}
+  /* double-entry strip */
+  .strip{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--rule)}
+  .strip .cell{padding:14px clamp(18px,3vw,28px);border-right:1px solid var(--rule2)}
+  .strip .cell:last-child{border-right:0}
+  .strip .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+  .strip .v{font-size:1.5rem;font-weight:600;margin-top:3px}
+  .strip .v.debit{color:var(--debit)} .strip .v.credit{color:var(--credit)}
+  .strip .note{font-size:.76rem;color:var(--ink2);margin-top:2px}
+  /* column headers */
+  .heads{display:grid;grid-template-columns:2.2fr 1fr 1fr 1.5fr 1fr;gap:0;padding:9px clamp(18px,3vw,28px);
+    border-bottom:1px solid var(--ink);font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink2)}
+  .heads span{text-align:right}.heads span:first-child{text-align:left}
+  /* tape */
+  .tape{padding:0 clamp(10px,3vw,20px)}
+  .line{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule2);
+    cursor:pointer;font:inherit;color:inherit;padding:0}
+  .line:last-child{border-bottom:0}
+  .line:hover,.line[aria-expanded=true]{background:rgba(46,110,82,.045)}
+  .line:focus-visible{outline:2px solid var(--sys);outline-offset:-2px}
+  .row{display:grid;grid-template-columns:2.2fr 1fr 1fr 1.5fr 1fr;align-items:center;padding:11px clamp(8px,1.6vw,10px)}
+  .case{display:flex;align-items:center;gap:10px;min-width:0}
+  .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
+  .nm{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .age{color:var(--ink2);font-size:.8rem}
+  .safety{font-family:var(--mono);font-size:9px;letter-spacing:.05em;color:var(--debit);border:1px solid rgba(158,59,46,.4);border-radius:4px;padding:1px 5px}
+  .r{text-align:right}
+  .debit-c{color:var(--debit)} .credit-c{color:var(--credit);font-weight:600}
+  .minibar{display:inline-flex;height:9px;width:112px;border-radius:3px;overflow:hidden;vertical-align:middle;
+    box-shadow:inset 0 0 0 1px rgba(32,38,42,.08)}
+  .minibar i{display:block;height:100%}
+  /* unfold */
+  .detail{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+  .line[aria-expanded=true] + .detail{grid-template-rows:1fr}
+  .detail-in{overflow:hidden}
+  .detail-pad{padding:4px clamp(8px,1.6vw,10px) 20px;display:grid;grid-template-columns:1.3fr 1fr;gap:24px}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:2px 20px}
+  .frow{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:.82rem;border-bottom:1px dotted var(--rule2)}
+  .frow .fdot{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+  .frow .fk{flex:1;color:#3a423d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .frow .fs{font-family:var(--mono);font-size:10px;color:var(--ink2)}
+  .equation{background:#fff;border:1px solid var(--rule);border-radius:8px;padding:16px 18px;align-self:start}
+  .equation .qt{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin-bottom:10px}
+  .eqline{display:flex;justify-content:space-between;padding:5px 0;font-size:.88rem;border-bottom:1px dotted var(--rule2)}
+  .eqline:last-child{border-bottom:0;border-top:1px solid var(--ink);margin-top:4px;padding-top:9px;font-weight:600}
+  .eqline .credit-c{font-weight:600}
+  /* footer + post */
+  .foot{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:16px clamp(18px,3vw,28px);border-top:2px solid var(--ink);background:#fff}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+  .post{font-family:var(--sans);font-weight:600;font-size:.86rem;color:#fff;background:var(--credit);
+    border:0;border-radius:999px;padding:10px 20px;cursor:pointer;transition:transform .12s ease,background .15s ease}
+  .post:hover{background:#255c44}.post:active{transform:scale(.97)}.post:disabled{opacity:.5;cursor:default}
+  .post:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .flash{animation:flash .9s ease}
+  @keyframes flash{0%{background:rgba(46,110,82,.28)}100%{background:transparent}}
+  .bump{animation:bump .5s ease}
+  @keyframes bump{0%{transform:translateY(0)}30%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+  @media (max-width:720px){
+    .heads,.row{grid-template-columns:1.8fr .9fr 1.3fr .9fr}
+    .heads span:nth-child(3),.row>.r:nth-child(3){display:none}
+    .detail-pad{grid-template-columns:1fr}.fields{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<script src="../shared/data.js"></script>
+<main class="sheet">
+  <header class="top">
+    <div class="brand">
+      <div class="eye">Fostr Chronicle</div>
+      <h1>The Case Ledger</h1>
+      <div class="sub" id="who"></div>
+    </div>
+    <div class="balance">
+      <div class="lbl">Balance · time saved this month</div>
+      <div class="big num" id="bal">0m</div>
+      <div class="alt" id="allt"></div>
+    </div>
+  </header>
+
+  <section class="strip">
+    <div class="cell"><div class="k">Old way — debit</div><div class="v debit num" id="s-old">0m</div><div class="note">retyping every note into the state system</div></div>
+    <div class="cell"><div class="k">In Chronicle</div><div class="v num" id="s-new">0m</div><div class="note">confirm pre-fills · capture what's new · sign</div></div>
+    <div class="cell"><div class="k">Saved — credit</div><div class="v credit num" id="s-saved">0m</div><div class="note" id="s-count"></div></div>
+  </section>
+
+  <div class="heads">
+    <span>Case</span><span>Old way</span><span>Chronicle</span><span>Auto-filled from record</span><span>Saved</span>
+  </div>
+  <div class="tape" id="tape"></div>
+
+  <footer class="foot">
+    <div class="legend">
+      <span><i style="background:var(--sys)"></i>from the record</span>
+      <span><i style="background:var(--dict)"></i>worker entry</span>
+      <span><i style="background:var(--need)"></i>needs a look</span>
+      <span><i style="background:var(--blank)"></i>not provided</span>
+    </div>
+    <button class="post" id="post">Post a note ＋</button>
+  </footer>
+</main>
+
+<script>
+(function(){
+  var L = window.LEDGER, M = L.model, F = L.fmt, SM = L.sourceMeta;
+  var STATUS = {needs_review:"#C0632F", in_progress:"#B4802E", in_queue:"#6E90A6", updated:"#8a918b"};
+  var RANK = {needs_review:0, in_progress:1, in_queue:2, updated:3};
+  var order = ["system","dictated","needs_look","blank"];
+  var cases = L.cases.slice().sort(function(a,b){return RANK[a.status]-RANK[b.status];});
+
+  document.getElementById("who").textContent = L.worker.name + " · " + L.worker.team + " · " + L.worker.caseload + " youth in care";
+
+  function minibar(sc){
+    var total = sc.system+sc.dictated+sc.needs_look+sc.blank;
+    var html = '<span class="minibar">';
+    order.forEach(function(k){ var w = (sc[k]/total*100).toFixed(2); if(sc[k]>0) html += '<i style="width:'+w+'%;background:'+SM[k].color+'" title="'+sc[k]+' '+SM[k].label+'"></i>'; });
+    return html+'</span>';
+  }
+  function fieldsBreak(sc){
+    // build a representative field list for this note honoring its source_counts
+    var buckets = []; order.forEach(function(k){ for(var i=0;i<sc[k];i++) buckets.push(k); });
+    var html = '<div class="fields">';
+    L.fields.forEach(function(f,i){
+      var src = buckets[i] || "blank";
+      html += '<div class="frow"><span class="fdot" style="background:'+SM[src].color+'"></span>'+
+              '<span class="fk">'+f.label+'</span><span class="fs">'+SM[src].verb+'</span></div>';
+    });
+    return html+'</div>';
+  }
+
+  function render(){
+    var tape = document.getElementById("tape"); tape.innerHTML="";
+    cases.forEach(function(c){
+      var wrap = document.createElement("div");
+      var btn = document.createElement("button");
+      btn.className="line"; btn.setAttribute("aria-expanded","false");
+      btn.innerHTML =
+        '<div class="row">'+
+          '<div class="case"><span class="dot" style="background:'+STATUS[c.status]+'"></span>'+
+            '<span class="nm">'+c.name+'</span><span class="age">·&nbsp;'+c.age+'</span>'+
+            (c.safety?'<span class="safety">SAFETY</span>':'')+'</div>'+
+          '<div class="r num debit-c">'+M.baselineMinutes+'m</div>'+
+          '<div class="r num">'+M.chronicleMinutes+'m</div>'+
+          '<div class="r">'+minibar(c.sc)+'&nbsp;<span class="num" style="color:var(--sys)">'+c.sc.system+'/11</span></div>'+
+          '<div class="r num credit-c">+'+c.saved+'m</div>'+
+        '</div>';
+      var det = document.createElement("div"); det.className="detail";
+      det.innerHTML = '<div class="detail-in"><div class="detail-pad">'+
+        fieldsBreak(c.sc)+
+        '<div class="equation"><div class="qt">How this note earned +'+c.saved+'m</div>'+
+          '<div class="eqline"><span>Old way (retype all 11)</span><span class="debit-c num">'+M.baselineMinutes+'m</span></div>'+
+          '<div class="eqline"><span>'+c.sc.system+' fields already known</span><span class="num" style="color:var(--sys)">not retyped</span></div>'+
+          '<div class="eqline"><span>In Chronicle</span><span class="num">'+M.chronicleMinutes+'m</span></div>'+
+          '<div class="eqline"><span>Time returned</span><span class="credit-c num">+'+c.saved+'m</span></div>'+
+        '</div></div></div>';
+      btn.addEventListener("click", function(){
+        var open = btn.getAttribute("aria-expanded")==="true";
+        btn.setAttribute("aria-expanded", open?"false":"true");
+      });
+      wrap.appendChild(btn); wrap.appendChild(det); tape.appendChild(wrap);
+    });
+  }
+
+  // count-up helper
+  function countUp(el, to, suffix, dur){
+    if(matchMedia("(prefers-reduced-motion:reduce)").matches){ el.textContent = (suffix==="hm"?F.hm(to):to+"m"); return; }
+    var start=performance.now(), from=0;
+    function step(t){ var p=Math.min(1,(t-start)/dur); var v=Math.round(from+(to-from)*(1-Math.pow(1-p,3)));
+      el.textContent = suffix==="hm"?F.hm(v):v+"m"; if(p<1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  }
+
+  var monthSaved = L.month.minutesSaved;
+  function paintTotals(){
+    document.getElementById("s-old").textContent = (L.month.filed*M.baselineMinutes)+"m";
+    document.getElementById("s-new").textContent = (L.month.filed*M.chronicleMinutes)+"m";
+    document.getElementById("s-saved").textContent = monthSaved+"m";
+    document.getElementById("s-count").textContent = L.month.filed+" notes · "+L.month.fieldsAutofilled+" fields auto-filled";
+    document.getElementById("allt").textContent = "all-time  "+F.hm(L.allTime.minutesSaved)+"  ·  "+L.allTime.notes+" notes";
+  }
+
+  render(); paintTotals();
+  countUp(document.getElementById("bal"), monthSaved, "min", 1100);
+
+  // "post a note" — animate a fresh line onto the tape + tick the balance
+  var pool = ["Rosa Delgado","Ben Okafor","Ivy Chen","Sam Rivera","Nadia Farouk","Leo Bianchi"], pi=0;
+  document.getElementById("post").addEventListener("click", function(){
+    var b=this; b.disabled=true;
+    var nm = pool[pi++ % pool.length];
+    var sc = {system:6, dictated:3, needs_look:1, blank:1};
+    var newCase = {name:nm, age:7+(pi%9), status:"updated", sc:sc, saved:M.perNoteSavedMin};
+    cases.unshift(newCase); render();
+    var firstLine = document.querySelector("#tape .line");
+    if(firstLine) firstLine.classList.add("flash");
+    monthSaved += M.perNoteSavedMin; L.month.filed++; L.month.fieldsAutofilled += sc.system;
+    paintTotals();
+    var bal=document.getElementById("bal"); bal.classList.remove("bump"); void bal.offsetWidth; bal.classList.add("bump");
+    countUp(bal, monthSaved, "min", 600);
+    setTimeout(function(){b.disabled=false;}, 650);
+  });
+})();
+</script>
+</body>
+</html>

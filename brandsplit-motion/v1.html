@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sign in — Fostr</title>
+<link rel="stylesheet" href="tokens.css" />
+<link rel="stylesheet" href="split.css" />
+<style>
+  /* ============================================================
+     >>> MOTION CSS ONLY — style your .brand .motion layer here.
+     Do not restyle the form/layout (that lives in split.css).
+     Keep it low-contrast (whites/teals) so the wordmark + line
+     stay perfectly legible on top. Freeze under reduced-motion.
+     ============================================================ */
+  .brand .motion { z-index: 0; }
+  .brand .motion canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <main class="shell">
+    <section class="brand">
+      <div class="motion" aria-hidden="true">
+        <!-- >>> MOTION MARKUP HERE (canvas / svg / divs) <<< -->
+        <canvas id="flowfield"></canvas>
+      </div>
+      <div class="brand__top"><img src="fostr-wordmark-white.png" alt="Fostr" /></div>
+      <div class="brand__body">
+        <p class="brand__line">The paperwork stays here, so more of your day can reach a kid.</p>
+        <p class="brand__sub">Your notes, your visits, your record — kept in one place that holds up when it matters.</p>
+      </div>
+    </section>
+
+    <section class="signin">
+      <div class="formWrap">
+        <div class="signinBrand"><img src="fostr-wordmark-black.png" alt="Fostr" /></div>
+        <h1>Sign in</h1>
+        <p class="hint">Use the account your agency set up for you.</p>
+        <form id="loginForm" class="stack" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="j.rivera" />
+          </div>
+          <div class="field">
+            <div class="labelRow">
+              <label for="password">Password</label>
+              <a class="link" href="#" id="forgot">Forgot password?</a>
+            </div>
+            <div class="pwWrap">
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
+              <button type="button" class="pwToggle" id="pwToggle" aria-pressed="false" aria-controls="password">Show</button>
+            </div>
+          </div>
+          <label class="remember" for="remember">
+            <input type="checkbox" id="remember" name="remember" checked />
+            <span>Keep me signed in</span>
+          </label>
+          <button type="submit" class="btn-primary" id="submitBtn">
+            <span class="spin" aria-hidden="true"></span><span id="submitLabel">Sign in</span>
+          </button>
+          <div class="or">or</div>
+          <button type="button" class="btn-ghost" id="ssoBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.8" />
+              <path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            Sign in with agency SSO
+          </button>
+        </form>
+        <p class="support">Trouble signing in? Ask your agency admin.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="split.js"></script>
+  <script>
+    /* ============================================================
+       >>> MOTION SCRIPT ONLY — self-contained IIFE. Drive your
+       .brand .motion animation here. rAF-capped, pause when the
+       tab is hidden, and render a single static frame when
+       matchMedia('(prefers-reduced-motion: reduce)').matches.
+
+       PATTERN — "FLOW-FIELD PARTICLES": a slow field of soft
+       drifting spores/dust motes advected along a gentle,
+       slowly-evolving vector field. Soft round dabs in white /
+       light-teal at low opacity, varied sizes, gentle depth.
+       They curl, drift and wrap; the field morphs over time so
+       it never loops obviously. One rAF loop capped ~34fps.
+       ============================================================ */
+    (function () {
+      var canvas = document.getElementById('flowfield');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      var panel = canvas.parentElement.parentElement; // .brand
+      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      var W = 0, H = 0, dpr = 1;
+      var particles = [];
+      var t = 0; // slow field-evolution clock
+
+      // Light, low-contrast palette (whites / light-teals) over the teal gradient.
+      var COLORS = [
+        [255, 255, 255],   // soft white
+        [231, 244, 243],   // teal-tint white
+        [180, 214, 211],   // light teal
+        [205, 228, 226]    // pale teal
+      ];
+
+      // ---- pseudo-random flow field (smooth, curling) ------------------
+      // A sum of a couple of low-frequency sinusoids gives a smooth angle
+      // that varies across the panel and drifts slowly with time.
+      function fieldAngle(x, y, time) {
+        var nx = x * 0.0016;
+        var ny = y * 0.0016;
+        var a =
+          Math.sin(nx + Math.cos(ny * 0.9 + time * 0.15)) +
+          Math.cos(ny - Math.sin(nx * 1.1 - time * 0.11)) +
+          Math.sin((nx + ny) * 0.7 + time * 0.08);
+        return a * 1.15; // radians-ish; scaled for gentle curl
+      }
+
+      function rand(a, b) { return a + Math.random() * (b - a); }
+
+      function makeParticle(seedAcross) {
+        // depth 0..1 — deeper = smaller, slower, blurrier, dimmer
+        var depth = Math.random();
+        var col = COLORS[(Math.random() * COLORS.length) | 0];
+        return {
+          x: Math.random() * (W || 1),
+          y: Math.random() * (H || 1),
+          depth: depth,
+          r: rand(1.2, 4.6) * (0.55 + depth * 0.9),
+          baseAlpha: rand(0.05, 0.16) * (0.5 + depth),
+          speed: (0.18 + depth * 0.55), // px per frame factor
+          col: col,
+          blur: (1 - depth) * 2.2,       // nearer motes a touch softer/larger halo
+          tw: rand(0, Math.PI * 2),      // twinkle phase
+          twSpeed: rand(0.004, 0.014)
+        };
+      }
+
+      function seedParticles() {
+        var area = W * H;
+        // density scaled to area, clamped so short mobile panel isn't sparse/heavy
+        var count = Math.max(46, Math.min(150, Math.round(area / 9000)));
+        particles = [];
+        for (var i = 0; i < count; i++) particles.push(makeParticle());
+      }
+
+      function resize() {
+        var rect = panel.getBoundingClientRect();
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        W = Math.max(1, Math.round(rect.width));
+        H = Math.max(1, Math.round(rect.height));
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        seedParticles();
+        if (reduce) drawStatic();
+      }
+
+      function drawParticle(p) {
+        var a = p.baseAlpha * (0.7 + 0.3 * Math.sin(p.tw));
+        var c = p.col;
+        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r + p.blur + 1.5);
+        g.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')');
+        g.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r + p.blur + 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function step() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'lighter'; // soft additive glow
+        for (var i = 0; i < particles.length; i++) {
+          var p = particles[i];
+          var ang = fieldAngle(p.x, p.y, t);
+          p.x += Math.cos(ang) * p.speed;
+          p.y += Math.sin(ang) * p.speed * 0.85 + 0.04; // faint downward drift
+          p.tw += p.twSpeed;
+
+          // wrap around edges with a small margin so motes re-enter softly
+          var m = 12;
+          if (p.x < -m) p.x = W + m;
+          else if (p.x > W + m) p.x = -m;
+          if (p.y < -m) p.y = H + m;
+          else if (p.y > H + m) p.y = -m;
+
+          drawParticle(p);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
+      function drawStatic() {
+        // one tasteful frame: advance the field a little then render once
+        t = 6.2;
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalCompositeOperation = 'lighter';
+        for (var i = 0; i < particles.length; i++) drawParticle(particles[i]);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+
+      // ---- rAF loop, ~34fps, paused when hidden -----------------------
+      var last = 0;
+      var interval = 1000 / 34;
+      function loop(now) {
+        raf = requestAnimationFrame(loop);
+        if (document.hidden) return;
+        if (now - last < interval) return;
+        last = now;
+        t += 0.02; // slow field evolution
+        step();
+      }
+
+      var raf = null;
+      var ro = ('ResizeObserver' in window) ? new ResizeObserver(resize) : null;
+      if (ro) ro.observe(panel);
+      else window.addEventListener('resize', resize);
+
+      resize();
+
+      if (reduce) {
+        drawStatic();
+      } else {
+        raf = requestAnimationFrame(loop);
+        document.addEventListener('visibilitychange', function () {
+          // reset frame timer so it resumes smoothly, not with a jump
+          if (!document.hidden) last = 0;
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

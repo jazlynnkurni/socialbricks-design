@@ -1,0 +1,91 @@
+/* Fostr Fieldbook — shared design tokens for the redesign lab.
+   Minimalist, calm, one accent (teal). Every variant links this file, then
+   adds ONLY layout CSS on top. Global rule: NO nested boxes. Prefer whitespace,
+   type hierarchy, and hairline rules over borders-inside-borders. */
+
+:root {
+  /* ink + surface */
+  --ink: #1f2725;          /* primary text */
+  --ink-2: #55635f;        /* secondary text / meta */
+  --ink-3: #8a9793;        /* faint meta, timestamps */
+  --paper: #ffffff;        /* the one canvas */
+  --canvas: #f4f7f6;       /* app background (dotted grid lives on this) */
+  --line: #e7edec;         /* hairline dividers — used sparingly */
+  --line-2: #f0f4f3;       /* even fainter */
+
+  /* single accent: teal */
+  --teal: #3d8b88;
+  --teal-deep: #2a6a68;
+  --teal-tint: #eef5f4;    /* faint teal wash for the active row only */
+
+  /* status hues — low-chroma, used only as small dots */
+  --st-review: #d08a3c;    /* needs review (amber) */
+  --st-queue:  #3d8b88;    /* in queue (teal) */
+  --st-done:   #4f9d6b;    /* up to date (green) */
+  --st-safety: #c0553f;    /* safety (muted red) */
+
+  /* type */
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --fs-hero: clamp(1.5rem, 2.4vw, 1.9rem);
+  --fs-title: 1.18rem;
+  --fs-body: 0.98rem;
+  --fs-meta: 0.82rem;
+  --fs-micro: 0.72rem;
+
+  /* rhythm */
+  --gap: 20px;
+  --radius: 14px;
+  --tap: 44px;             /* iPad touch target minimum */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: var(--teal-deep); }
+
+/* dotted app canvas (the calm grid behind everything) */
+.dotgrid {
+  background-color: var(--canvas);
+  background-image: radial-gradient(color-mix(in srgb, var(--teal) 26%, transparent) 1.1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+/* ---- THE COUNT BADGE (per jaz): turquoise outline, white fill, teal number ---- */
+.count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border: 1.5px solid var(--teal);
+  background: #fff;
+  color: var(--teal-deep);
+  border-radius: 999px;
+  font-size: 0.72rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ---- status dot (the ONLY place status color appears) ---- */
+.dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; flex: 0 0 auto; }
+.dot.review { background: var(--st-review); }
+.dot.queue  { background: var(--st-queue); }
+.dot.done   { background: var(--st-done); }
+.dot.safety { background: var(--st-safety); }
+
+/* ---- flat "from record" meter: solid teal fill on a neutral track, no gloss ---- */
+.meter { position: relative; display: inline-block; height: 6px; width: 76px; border-radius: 999px;
+  background: color-mix(in srgb, var(--teal) 12%, #fff); overflow: hidden; }
+.meter > i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--teal); }
+
+/* small-caps section label — replaces heavy card headers */
+.eyebrow { font-size: var(--fs-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+
+/* a quiet text button (no filled capsules unless it's a primary action) */
+.tbtn { background: none; border: none; padding: 6px 0; color: var(--teal-deep); font-weight: 600; }
+.tbtn:hover { color: var(--teal); }

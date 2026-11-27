@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr login — 5 living-motion patterns</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  body { min-height: 100vh; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 58px 26px 90px; }
+  .brand img { height: 30px; width: auto; }
+  h1 { font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 600; letter-spacing: -0.025em; margin: 18px 0 12px; max-width: 22ch; line-height: 1.08; }
+  .lede { font-size: 1.04rem; color: var(--ink-2); max-width: 68ch; line-height: 1.6; }
+  .note { font-size: 0.9rem; color: var(--ink-3); margin-top: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; margin-top: 32px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 22px; transition: border-color .18s, transform .18s, box-shadow .18s; }
+  a.card:hover { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); transform: translateY(-2px); box-shadow: 0 14px 32px rgba(23,58,57,0.08); }
+  .num { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1.5px solid var(--teal); background: #fff; color: var(--teal-deep); border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+  .vname { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.015em; margin: 12px 0 8px; }
+  .vdesc { font-size: 0.94rem; color: var(--ink-2); line-height: 1.55; margin: 0; }
+  .open { margin-top: 15px; font-size: 0.82rem; font-weight: 600; color: var(--teal-deep); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><img src="fostr-wordmark-black.png" alt="Fostr" /></div>
+    <h1>Living motion — five patterns</h1>
+    <p class="lede">Brand Split is locked. Same format, same form, same logo and line — the ONLY thing that changes is how the teal panel moves. Five different "living" patterns (none of them the caustic). Open each, watch the left panel, and pick the movement that feels most Fostr.</p>
+    <p class="note">The form and layout are byte-identical across all five (shared split.css / split.js), so you're judging pure motion.</p>
+    <div class="grid" id="grid"></div>
+  </div>
+  <script>
+    const V = [
+      { n:1, f:"v1.html", name:"Flow-field particles", d:"Soft dust motes / spores drift along a slow curl field — airborne, weightless, hypnotic." },
+      { n:2, f:"v2.html", name:"Morphing mesh blobs", d:"Big soft teal/white blobs slowly knead, merge and split under heavy blur — a lava-lamp-calm breathing surface." },
+      { n:3, f:"v3.html", name:"Aurora ribbons", d:"Undulating drapes of light — northern-lights / blown-silk curtains that wave slowly across the panel." },
+      { n:4, f:"v4.html", name:"Living roots / veins", d:"A delicate root network draws itself in and pulses with travelling light — Fostr's load-bearing roots, alive." },
+      { n:5, f:"v5.html", name:"Breathing contours", d:"Topographic contour lines / ripple rings that shift and breathe — a living map, technical-but-organic." },
+    ];
+    document.getElementById("grid").innerHTML = V.map(v => `
+      <a class="card" href="${v.f}">
+        <span class="num">${v.n}</span>
+        <div class="vname">${v.name}</div>
+        <p class="vdesc">${v.d}</p>
+        <div class="open">Open ${v.f} →</div>
+      </a>`).join("");
+  </script>
+</body>
+</html>

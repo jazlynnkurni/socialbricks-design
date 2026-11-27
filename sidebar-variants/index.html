@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr — 5 sidebar directions</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  body { min-height: 100vh; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 58px 26px 90px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .brand img { height: 30px; width: auto; }
+  h1 { font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 600; letter-spacing: -0.025em; margin: 16px 0 12px; max-width: 20ch; line-height: 1.08; }
+  .lede { font-size: 1.04rem; color: var(--ink-2); max-width: 66ch; line-height: 1.6; }
+  .goals { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 4px; }
+  .goal { font-size: 0.82rem; color: var(--teal-deep); border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent); border-radius: 999px; padding: 5px 12px; background: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; margin-top: 32px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 22px; transition: border-color .18s, transform .18s, box-shadow .18s; }
+  a.card:hover { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); transform: translateY(-2px); box-shadow: 0 14px 32px rgba(23,58,57,0.08); }
+  .num { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1.5px solid var(--teal); background: #fff; color: var(--teal-deep); border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+  .vname { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.015em; margin: 12px 0 8px; }
+  .vdesc { font-size: 0.94rem; color: var(--ink-2); line-height: 1.55; margin: 0; }
+  .open { margin-top: 15px; font-size: 0.82rem; font-weight: 600; color: var(--teal-deep); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><img src="fostr-wordmark-black.png" alt="Fostr" /></div>
+    <h1>Five sidebar directions</h1>
+    <p class="lede">Same real nav, same logo, same Inter type — five ways the left sidebar can feel, each with its own micro-animation signature. Open them, click around (they're interactive), and tell me the direction (or the pieces to mix).</p>
+    <div class="goals">
+      <span class="goal">Real logo &amp; font</span>
+      <span class="goal">Micro-animations</span>
+      <span class="goal">Minimal &amp; calm</span>
+      <span class="goal">iPad-friendly</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <script>
+    const V = [
+      { n:1, f:"v1.html", name:"Rail → Expand", d:"A slim icon rail that springs open to full labels; the active marker slides between items. The collapse is the signature move." },
+      { n:2, f:"v2.html", name:"Active Blob", d:"An always-expanded list where a teal highlight pill glides (magic-move) from item to item as you switch, with a soft icon pop." },
+      { n:3, f:"v3.html", name:"Left Accent Bar", d:"A teal bar on the left edge glides to mark the active item; hover wipes in a faint fill. Precise and engineered-feeling." },
+      { n:4, f:"v4.html", name:"Minimal Sections", d:"The calmest: grouped under tiny labels, no pills — active is teal text + a dot that pops in. Editorial and restrained." },
+      { n:5, f:"v5.html", name:"Icon Rail + Tooltip", d:"A compact icon rail with sliding label tooltips and an active lift/glow; expands to a labeled drawer. Most space-efficient." },
+      { n:6, f:"v6.html", name:"Immersive teal", d:"A teal-glass sidebar to match the immersive login: white wordmark, drifting aura, and a frosted active pill that glides between items. Cohesive brand." },
+    ];
+    document.getElementById("grid").innerHTML = V.map(v => `
+      <a class="card" href="${v.f}">
+        <span class="num">${v.n}</span>
+        <div class="vname">${v.name}</div>
+        <p class="vdesc">${v.d}</p>
+        <div class="open">Open ${v.f} →</div>
+      </a>`).join("");
+  </script>
+</body>
+</html>

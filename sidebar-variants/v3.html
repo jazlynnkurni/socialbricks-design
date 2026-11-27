@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr sidebar — Left Accent Bar</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* ── v3: LEFT ACCENT BAR ──────────────────────────────────────────
+     A precise moving marker on the sidebar's left edge glides + snaps
+     to the active row. Hover wipes a faint teal-tint fill in from the
+     left; the icon nudges 1–2px toward the label. Understated, engineered. */
+
+  :root {
+    --rail-w: 264px;
+    --rail-w-collapsed: 76px;
+    --row-h: 44px;
+    --row-gap: 2px;
+    --pad-x: 14px;
+    --ease: cubic-bezier(.22, .61, .36, 1);   /* calm decel */
+    --ease-snap: cubic-bezier(.34, 1.2, .5, 1); /* tiny overshoot for the bar */
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: var(--rail-w) 1fr;
+    height: 100vh;
+    transition: grid-template-columns .42s var(--ease);
+  }
+  .app.collapsed { grid-template-columns: var(--rail-w-collapsed) 1fr; }
+
+  /* ── Sidebar shell ─────────────────────────────────────────── */
+  .rail {
+    position: relative;
+    background: var(--paper);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Brand */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 66px;
+    padding: 0 18px;
+    flex: 0 0 auto;
+  }
+  .brand img.mark { width: 26px; height: 26px; display: block; flex: 0 0 auto; }
+  .brand img.wordmark {
+    height: 17px; width: auto; display: block;
+    transition: opacity .24s var(--ease);
+  }
+  .collapsed .brand { padding: 0; justify-content: center; }
+  .collapsed .brand img.wordmark { opacity: 0; width: 0; }
+
+  /* ── Nav ───────────────────────────────────────────────────── */
+  .nav {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 10px 12px;
+  }
+
+  /* The gliding accent bar — one element, moves via transform */
+  .accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: var(--row-h);
+    border-radius: 0 3px 3px 0;
+    background: var(--teal);
+    transform: translateY(0);
+    transition:
+      transform .40s var(--ease-snap),
+      height .30s var(--ease),
+      opacity .2s ease;
+    will-change: transform;
+    pointer-events: none;
+    box-shadow: 0 0 0 0 var(--teal);
+  }
+  /* faint glow that pulses once when the bar lands */
+  .accent.moving { transition-timing-function: var(--ease-snap); }
+
+  .group { margin-top: 10px; }
+  .group:first-child { margin-top: 2px; }
+  .group-label {
+    padding: 8px 10px 6px calc(var(--pad-x) + 2px);
+    transition: opacity .2s var(--ease), height .28s var(--ease), padding .28s var(--ease);
+    height: 26px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .collapsed .group-label { opacity: 0; height: 8px; padding-top: 0; padding-bottom: 0; }
+  /* thin divider replaces the label text when collapsed */
+  .collapsed .group + .group .group-label::before {
+    content: "";
+    display: block;
+    height: 1px;
+    background: var(--line);
+    margin: 3px 12px;
+  }
+
+  ul.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--row-gap); }
+
+  .row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: var(--row-h);
+    min-height: var(--tap);
+    padding: 0 12px 0 var(--pad-x);
+    border: 0;
+    background: transparent;
+    border-radius: 9px;
+    cursor: pointer;
+    color: var(--ink-2);
+    text-align: left;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* hover wipe — a teal-tint panel that scales in from the left edge */
+  .row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--teal-tint);
+    border-radius: 9px;
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform .26s var(--ease);
+  }
+  .row:hover::before,
+  .row:focus-visible::before { transform: scaleX(1); }
+  .row:focus-visible { outline: none; }
+  .row:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--teal) 55%, transparent); }
+
+  .row .ico {
+    flex: 0 0 auto;
+    width: 20px; height: 20px;
+    display: grid; place-items: center;
+    color: var(--ink-3);
+    transition: color .22s var(--ease), transform .24s var(--ease);
+  }
+  .row .ico svg { width: 20px; height: 20px; display: block; }
+
+  .row .label {
+    font-size: 0.905rem;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    color: var(--ink-2);
+    transition: color .22s var(--ease), font-weight .22s var(--ease), opacity .2s var(--ease);
+  }
+  .collapsed .row .label { opacity: 0; }
+  .collapsed .row { padding-left: 0; justify-content: center; gap: 0; }
+  .collapsed .row .ico { width: 24px; height: 24px; }
+
+  /* icon nudge toward the label on hover */
+  .row:hover .ico { transform: translateX(2px); color: var(--ink-2); }
+  .collapsed .row:hover .ico { transform: translateX(0) scale(1.06); }
+
+  /* active state */
+  .row.active .ico { color: var(--teal); }
+  .row.active .label { color: var(--teal-deep); font-weight: 650; }
+  .row.active:hover .ico { transform: translateX(2px); }
+  .collapsed .row.active:hover .ico { transform: scale(1.06); }
+
+  /* ── Footer ────────────────────────────────────────────────── */
+  .foot {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--line);
+    padding: 10px;
+  }
+  .user {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 7px 8px;
+    border-radius: 10px;
+    border: 0; background: transparent; cursor: pointer;
+    min-height: var(--tap);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .user::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: var(--teal-tint); border-radius: 10px;
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform .26s var(--ease);
+  }
+  .user:hover::before, .user:focus-visible::before { transform: scaleX(1); }
+  .user:focus-visible { outline: none; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--teal) 55%, transparent); }
+
+  .avatar {
+    flex: 0 0 auto;
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(150deg, var(--teal), var(--teal-deep));
+    color: #fff; display: grid; place-items: center;
+    font-size: 0.76rem; font-weight: 650; letter-spacing: 0.01em;
+  }
+  .who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; transition: opacity .2s var(--ease); }
+  .who .name { font-size: 0.85rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+  .who .role { font-size: 0.72rem; color: var(--ink-3); white-space: nowrap; }
+  .who .logout {
+    margin-top: 3px; font-size: 0.72rem; color: var(--ink-3);
+    background: none; border: 0; padding: 0; cursor: pointer; text-align: left;
+    width: fit-content;
+    transition: color .18s var(--ease);
+  }
+  .who .logout:hover { color: var(--teal-deep); }
+  .collapsed .who { opacity: 0; }
+  .collapsed .user { justify-content: center; padding-left: 0; padding-right: 0; }
+
+  /* collapse toggle */
+  .toggle {
+    position: absolute;
+    top: 22px;
+    right: -13px;
+    z-index: 5;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 3px rgba(31,39,37,.08);
+    display: grid; place-items: center;
+    cursor: pointer;
+    color: var(--ink-2);
+    transition: transform .3s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+  }
+  .toggle:hover { color: var(--teal-deep); box-shadow: 0 2px 6px rgba(31,39,37,.12); }
+  .toggle svg { width: 15px; height: 15px; transition: transform .42s var(--ease); }
+  .collapsed .toggle svg { transform: rotate(180deg); }
+
+  /* ── Content frame ─────────────────────────────────────────── */
+  .stage { min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    height: 66px; flex: 0 0 auto;
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 26px;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .crumb { display: flex; align-items: center; gap: 8px; color: var(--ink-3); font-size: 0.82rem; }
+  .topbar .crumb b { color: var(--ink); font-weight: 650; font-size: 1.06rem; letter-spacing: -0.01em; }
+  .topbar .spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 34px; padding: 0 13px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--ink-2);
+    font-size: 0.8rem; font-weight: 500; background: var(--paper);
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+
+  .canvas { flex: 1; min-height: 0; padding: 30px; overflow: auto; }
+  .sheet {
+    max-width: 780px;
+    background: color-mix(in srgb, var(--paper) 78%, transparent);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 26px 28px;
+    backdrop-filter: blur(2px);
+  }
+  .sheet h1 { margin: 6px 0 4px; font-size: 1.28rem; letter-spacing: -0.02em; color: var(--ink); }
+  .sheet p { margin: 0; color: var(--ink-2); font-size: 0.92rem; max-width: 56ch; }
+  .ghost { margin-top: 22px; display: grid; gap: 12px; }
+  .ghost .bar { height: 13px; border-radius: 7px; background: var(--line); }
+  .ghost .bar.s { width: 40%; } .ghost .bar.m { width: 68%; } .ghost .bar.l { width: 88%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: .001ms !important; }
+    .accent { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+    <aside class="rail" aria-label="Primary">
+      <button class="toggle" id="toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+
+      <div class="brand">
+        <img class="mark" src="fostr-logo.svg" alt="Fostr" />
+        <img class="wordmark" src="fostr-wordmark-black.png" alt="Fostr" />
+      </div>
+
+      <nav class="nav" id="nav" aria-label="Sections">
+        <span class="accent" id="accent" aria-hidden="true"></span>
+
+        <div class="group">
+          <div class="group-label eyebrow">Daily work</div>
+          <ul class="list">
+            <li><button class="row" type="button" title="Dashboard">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
+              <span class="label">Dashboard</span>
+            </button></li>
+          </ul>
+        </div>
+
+        <div class="group">
+          <div class="group-label eyebrow">Case work</div>
+          <ul class="list">
+            <li><button class="row active" type="button" aria-current="page" title="Fieldbook">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h6v16H4a2 2 0 0 1-2-2z"/><path d="M10 4h6a2 2 0 0 1 2 2v6"/><path d="M2 12h8"/><path d="M21.4 14.6a2 2 0 0 0-2.8-2.8L14 16.4V19h2.6z"/></svg></span>
+              <span class="label">Fieldbook</span>
+            </button></li>
+            <li><button class="row" type="button" title="Review queue">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg></span>
+              <span class="label">Review queue</span>
+            </button></li>
+            <li><button class="row" type="button" title="Search case history">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+              <span class="label">Search case history</span>
+            </button></li>
+          </ul>
+        </div>
+
+        <div class="group">
+          <div class="group-label eyebrow">Court-ready</div>
+          <ul class="list">
+            <li><button class="row" type="button" title="Verify a seal">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
+              <span class="label">Verify a seal</span>
+            </button></li>
+          </ul>
+        </div>
+
+        <div class="group">
+          <div class="group-label eyebrow">Reports</div>
+          <ul class="list">
+            <li><button class="row" type="button" title="Reporting">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="12" width="3" height="5" rx="0.5"/><rect x="12.5" y="8" width="3" height="9" rx="0.5"/><rect x="18" y="5" width="3" height="12" rx="0.5"/></svg></span>
+              <span class="label">Reporting</span>
+            </button></li>
+            <li><button class="row" type="button" title="Exports">
+              <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg></span>
+              <span class="label">Exports</span>
+            </button></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="foot">
+        <button class="user" type="button" title="Jaden Hinton — account">
+          <span class="avatar" aria-hidden="true">JH</span>
+          <span class="who">
+            <span class="name">Jaden Hinton</span>
+            <span class="role">Caseworker</span>
+            <span class="logout" role="button" tabindex="-1">Log out</span>
+          </span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── CONTENT FRAME ───────────────────────────────────── -->
+    <main class="stage">
+      <header class="topbar">
+        <div class="crumb"><span>Case work</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          <b id="pageTitle">Fieldbook</b>
+        </div>
+        <div class="spacer"></div>
+        <span class="pill"><span class="dot"></span> Autosaved</span>
+      </header>
+
+      <div class="canvas dotgrid">
+        <section class="sheet">
+          <div class="eyebrow">Active workspace</div>
+          <h1 id="sheetTitle">Fieldbook</h1>
+          <p>The left accent bar glides to whichever section you open, snapping its height to the row. Switch items to watch the marker travel; hover any row to see the tint wipe in from the edge.</p>
+          <div class="ghost">
+            <div class="bar l"></div>
+            <div class="bar m"></div>
+            <div class="bar s"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+<script>
+  var app = document.getElementById('app');
+  var nav = document.getElementById('nav');
+  var accent = document.getElementById('accent');
+  var rows = Array.prototype.slice.call(nav.querySelectorAll('.row'));
+  var toggleBtn = document.getElementById('toggle');
+  var pageTitle = document.getElementById('pageTitle');
+  var sheetTitle = document.getElementById('sheetTitle');
+
+  function labelOf(row){ return row.querySelector('.label').textContent.trim(); }
+
+  // Position the gliding bar to align with the active row.
+  function placeAccent(animate){
+    var active = nav.querySelector('.row.active');
+    if(!active){ accent.style.opacity = 0; return; }
+    accent.style.opacity = 1;
+    var navRect = nav.getBoundingClientRect();
+    var r = active.getBoundingClientRect();
+    // shrink the marker slightly relative to the row for a precise look
+    var inset = 8;
+    var h = r.height - inset * 2;
+    var y = (r.top - navRect.top) + nav.scrollTop + inset;
+    if(!animate){
+      var prev = accent.style.transition;
+      accent.style.transition = 'none';
+      accent.style.height = h + 'px';
+      accent.style.transform = 'translateY(' + y + 'px)';
+      // force reflow then restore
+      void accent.offsetWidth;
+      accent.style.transition = prev;
+    } else {
+      accent.style.height = h + 'px';
+      accent.style.transform = 'translateY(' + y + 'px)';
+    }
+  }
+
+  function setActive(row){
+    if(row.classList.contains('active')) return;
+    rows.forEach(function(r){
+      r.classList.remove('active');
+      r.removeAttribute('aria-current');
+    });
+    row.classList.add('active');
+    row.setAttribute('aria-current', 'page');
+    placeAccent(true);
+    var name = labelOf(row);
+    pageTitle.textContent = name;
+    sheetTitle.textContent = name;
+  }
+
+  rows.forEach(function(row){
+    row.addEventListener('click', function(){ setActive(row); });
+  });
+
+  // Collapse / expand
+  toggleBtn.addEventListener('click', function(){
+    var collapsed = app.classList.toggle('collapsed');
+    toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+    toggleBtn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    toggleBtn.setAttribute('title', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    // let the width transition settle, then re-measure the bar
+    setTimeout(function(){ placeAccent(true); }, 60);
+  });
+
+  // Initial placement (no animation) + keep aligned on resize
+  window.addEventListener('load', function(){ placeAccent(false); });
+  placeAccent(false);
+  var rt;
+  window.addEventListener('resize', function(){
+    clearTimeout(rt);
+    rt = setTimeout(function(){ placeAccent(false); }, 80);
+  });
+</script>
+</body>
+</html>

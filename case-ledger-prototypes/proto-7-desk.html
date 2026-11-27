@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Workbench — bento, optimized</title>
+<style>
+  :root{
+    --paper:#EFEDE6; --grid:rgba(35,43,39,.055); --cell:#FFFFFF; --cell2:#FBFAF6;
+    --ink:#232B27; --ink2:#5b625d; --ink3:#8a918b; --line:rgba(35,43,39,.11); --line2:rgba(35,43,39,.06);
+    --teal:#3F7E6E; --teal-ink:#2E6152; --teal-bg:rgba(63,126,110,.10);
+    --needs:#C0632F; --prog:#B4802E; --queue:#3F7E6E; --updated:#9AA0A6; --overdue:#B23B2E;
+    --sys:#3F7E6E; --dict:#B4802E; --need:#C0632F; --blank:#C7CCC8;
+    --sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      var(--paper);
+    background-size:26px 26px, 26px 26px;
+    color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.45;min-height:100%;
+  }
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .desk{max-width:1140px;margin:0 auto;padding:clamp(16px,2.6vw,30px)}
+  /* workbench chrome — minimal */
+  .chrome{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:.82rem;color:var(--ink2)}
+  .chrome .pill{display:inline-flex;align-items:center;gap:7px;background:var(--cell);border:1px solid var(--line);border-radius:999px;padding:6px 13px}
+  .chrome .pill .g{width:7px;height:7px;border-radius:50%;background:var(--teal)}
+  .chrome .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+  .chrome .clock{margin-left:auto;font-family:var(--mono);color:var(--ink3)}
+  /* the bento — size == importance */
+  .bento{display:grid;grid-template-columns:1.72fr 1fr;grid-auto-rows:min-content;gap:14px;align-items:start}
+  .cell{background:var(--cell);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 0 rgba(35,43,39,.03),0 10px 30px rgba(35,43,39,.05)}
+  .cell.queue{grid-row:1 / span 3;padding:20px 20px 8px}
+  .col{display:contents}
+  .cell.next{padding:18px 20px}
+  .cell.glance{padding:16px 20px}
+  .cell.scratch{padding:16px 18px 18px}
+  .ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:14px}
+  .ch h2{font-size:1.18rem;font-weight:600;letter-spacing:-.01em;margin:0}
+  .ch .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+  /* queue chips */
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--cell2);border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;font-size:.82rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all .13s}
+  .chip:hover{border-color:rgba(35,43,39,.26)}
+  .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip .c{font-family:var(--mono);font-size:.74rem;opacity:.8}
+  .chip .d{width:6px;height:6px;border-radius:50%}
+  .chip:focus-visible,.rowbtn:focus-visible,.primary:focus-visible,.jot:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  /* queue list */
+  .rows{max-height:min(58vh,560px);overflow:auto;margin:0 -6px}
+  .rowbtn{display:grid;grid-template-columns:118px 1fr auto;gap:12px;align-items:center;width:100%;text-align:left;
+    background:none;border:0;border-radius:12px;font:inherit;color:inherit;padding:11px 8px;cursor:pointer;transition:background .12s}
+  .rowbtn:hover{background:rgba(63,126,110,.05)}
+  .rowbtn.next{background:rgba(63,126,110,.09);box-shadow:inset 3px 0 0 var(--teal)}
+  .st{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:600}
+  .st .d{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .who .nm{font-weight:600;font-size:.95rem}
+  .who .mt{font-size:.78rem;color:var(--ink2);margin-top:1px}
+  .safety{margin-left:6px;font-family:var(--mono);font-size:8.5px;letter-spacing:.05em;color:var(--overdue);border:1px solid rgba(178,59,46,.4);border-radius:4px;padding:1px 4px;vertical-align:middle}
+  .rt{text-align:right}
+  .due{font-size:.8rem;color:var(--ink2)}.due.over{color:var(--overdue);font-weight:600}.due.week{color:var(--prog);font-weight:600}
+  .meter{display:flex;height:7px;width:70px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(35,43,39,.08);margin-top:5px;margin-left:auto}
+  .meter i{display:block;height:100%}
+  .prov{font-family:var(--mono);font-size:.7rem;color:var(--ink3);margin-top:3px}
+  .prov b{color:var(--sys)}
+  /* next cell — the one primary action */
+  .next .up{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+  .next .nm{font-size:1.15rem;font-weight:600;letter-spacing:-.01em}
+  .next .mt{font-size:.82rem;color:var(--ink2);margin:2px 0 14px}
+  .primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--teal);color:#fff;border:0;
+    border-radius:12px;font-family:var(--sans);font-weight:600;font-size:.95rem;padding:13px;cursor:pointer;transition:transform .12s,background .15s}
+  .primary:hover{background:#356a5c}.primary:active{transform:scale(.98)}
+  /* glance — small ambient stats, not tiles */
+  .glance .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:.86rem;border-bottom:1px solid var(--line2)}
+  .glance .row:last-child{border-bottom:0}.glance .row b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .glance .row.hot b{color:var(--overdue)}
+  /* scratch — the graph-paper jot pad */
+  .jot{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    font:inherit;font-size:.88rem;color:var(--ink);line-height:26px;
+    background:
+      linear-gradient(90deg, rgba(178,59,46,.12) 1px, transparent 1px) 22px 0/100% 100%,
+      repeating-linear-gradient(180deg, transparent, transparent 25px, rgba(63,126,110,.13) 25px, rgba(63,126,110,.13) 26px);
+    background-attachment:local;}
+  .jot:focus{outline:2px solid var(--teal);outline-offset:0;border-color:transparent}
+  .jot::placeholder{color:var(--ink3)}
+  /* capture drawer — pull a case file onto the desk */
+  .scrim{position:fixed;inset:0;background:rgba(24,32,29,.28);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(480px,94vw);background:var(--paper);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px;border-left:1px solid var(--line);box-shadow:-20px 0 60px rgba(35,43,39,.18);
+    transform:translateX(100%);transition:transform .24s cubic-bezier(.22,1,.36,1);z-index:41;display:flex;flex-direction:column}
+  .drawer.on{transform:none}
+  .dhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--line)}
+  .dhead .nm{font-size:1.25rem;font-weight:600;letter-spacing:-.01em}
+  .dhead .mt{font-size:.82rem;color:var(--ink2);margin-top:2px}
+  .x{background:var(--cell);border:1px solid var(--line);border-radius:9px;width:32px;height:32px;cursor:pointer;font-size:16px;color:var(--ink2);flex:0 0 auto}
+  .dbody{flex:1;overflow:auto;padding:16px 22px 22px}
+  .grp{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin:16px 0 8px}
+  .fld{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--cell);border:1px solid var(--line);
+    border-radius:10px;padding:9px 12px;margin-bottom:7px;font-size:.88rem}
+  .fld .fk{color:var(--ink2)}.fld .fv{font-weight:500}
+  .chipsrc{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;
+    text-transform:uppercase;padding:2px 7px;border-radius:999px}
+  .confirm{background:var(--teal-bg);color:var(--teal-ink);border:1px solid rgba(63,126,110,.3);border-radius:8px;
+    font-family:var(--sans);font-weight:600;font-size:.78rem;padding:5px 11px;cursor:pointer}
+  .confirm.done{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .dfoot{border-top:1px solid var(--line);padding:14px 22px;display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.5)}
+  .dfoot .primary{width:auto;flex:1}
+  .ghost{background:none;border:1px solid var(--line);border-radius:12px;font:inherit;font-weight:600;font-size:.9rem;color:var(--ink2);padding:12px 18px;cursor:pointer}
+  @media (max-width:840px){.bento{grid-template-columns:1fr}.cell.queue{grid-row:auto}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  .tip{position:fixed;pointer-events:none;background:#1a231f;color:#fff;border-radius:7px;padding:6px 9px;font-size:11px;font-family:var(--mono);opacity:0;transition:opacity .1s;z-index:60;white-space:nowrap}
+</style>
+</head>
+<body>
+<script src="../shared/data.js"></script>
+<div class="tip" id="tip"></div>
+<div class="desk">
+  <div class="chrome">
+    <span class="pill"><span class="g"></span>Case ledger</span>
+    <span class="lbl">Workbench</span>
+    <span class="clock" id="clock">—</span>
+  </div>
+
+  <div class="bento">
+    <!-- HERO cell: the ranked queue (biggest = most important) -->
+    <section class="cell queue">
+      <div class="ch"><h2>What needs you</h2><span class="k" id="qcount"></span></div>
+      <div class="chips" id="chips"></div>
+      <div class="rows" id="rows"></div>
+    </section>
+
+    <!-- primary action cell -->
+    <section class="cell next" id="nextCell"></section>
+
+    <!-- ambient glance (not a tile grid — a tidy little readout) -->
+    <section class="cell glance" id="glance"></section>
+
+    <!-- the jot pad: bullet notes on graph paper, always on the desk -->
+    <section class="cell scratch">
+      <div class="ch"><h2 style="font-size:1rem">Scratch pad</h2><span class="k">jot as you go</span></div>
+      <textarea class="jot" id="scratch" placeholder="•  quick notes, reminders, anything…" spellcheck="false"></textarea>
+    </section>
+  </div>
+</div>
+
+<!-- capture drawer: pull the case file onto the desk, jot bullet notes -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dhead">
+    <div><div class="nm" id="dName"></div><div class="mt" id="dMeta"></div></div>
+    <button class="x" id="dClose" aria-label="Close">✕</button>
+  </div>
+  <div class="dbody" id="dBody"></div>
+  <div class="dfoot">
+    <button class="ghost" id="dCancel">Cancel</button>
+    <button class="primary" id="dPost">Post to review queue →</button>
+  </div>
+</aside>
+
+<script>
+(function(){
+  var L=window.LEDGER, SM=L.sourceMeta;
+  var STATUS={needs_review:{label:"Needs review",color:"var(--needs)",rank:0},
+    in_progress:{label:"In progress",color:"var(--prog)",rank:1},
+    in_queue:{label:"In review queue",color:"var(--queue)",rank:2},
+    updated:{label:"Updated",color:"var(--updated)",rank:3}};
+  var ORDER=["system","dictated","needs_look","blank"];
+  var tip=document.getElementById("tip");
+  function showTip(x,y,h){tip.innerHTML=h;tip.style.left=(x+12)+"px";tip.style.top=(y+12)+"px";tip.style.opacity=1;}
+  function hideTip(){tip.style.opacity=0;}
+
+  // 20-case caseload (matches the app: 12 need review / 5 queue / 3 updated), with due offsets
+  var NAMES=["Aaliyah Nguyen","Marcus Alvarez","Andre Baptiste","Priya Desai","DeShawn Carter","Nia Washington","Cameron Reyes","Leah Goldstein","Xavier Dubois","Sofia Herrera","Jamal Robinson","Mei Lin","Emma Sullivan","Kai Tanaka","Isaiah Brooks","Lucia Romano","Noah Whitefeather","Ava Thompson","Diego Morales","Hannah Cohen"];
+  var AGES=[16,14,19,6,12,9,11,7,15,7,13,10,5,15,4,8,11,16,9,6];
+  var CARE=["In care","In care","Extended (18-22)","In care","In care","In care","In care","In care","In care","In care","In care","In care","In care","In care","In care","In care","In care","Extended (18-22)","In care","In care"];
+  var DAYS=[-4,-1,1,2,3,4,5,6,6,7,8,9,10,4,11,12,13,15,16,20];
+  var SCS=[[5,3,2,1],[7,2,1,1],[5,4,1,1],[6,3,1,1],[6,4,1,0],[6,3,1,1],[5,4,1,1],[7,2,1,1],[5,3,2,1],[6,3,1,1],[7,3,0,1],[6,3,1,1],[8,2,1,0],[5,4,1,1],[6,3,1,1],[7,3,1,0],[6,3,1,1],[7,2,1,1],[6,3,1,1],[6,3,2,0]];
+  var cases=NAMES.map(function(nm,i){return {id:"c"+i,name:nm,age:AGES[i],care:CARE[i],
+    status:i<12?"needs_review":i<17?"in_queue":"updated",days:DAYS[i],
+    sc:{system:SCS[i][0],dictated:SCS[i][1],needs_look:SCS[i][2],blank:SCS[i][3]},safety:(i===0)};});
+
+  function dueLabel(d){if(d<0)return{t:(-d)+"d overdue",cls:"over"};if(d===0)return{t:"today",cls:"week"};if(d<=6)return{t:"in "+d+"d",cls:"week"};return{t:"in "+d+"d",cls:""};}
+  function meter(sc){var tot=sc.system+sc.dictated+sc.needs_look+sc.blank,h="";ORDER.forEach(function(k){if(sc[k]>0)h+='<i style="width:'+(sc[k]/tot*100).toFixed(2)+'%;background:'+SM[k].color+'"></i>';});return h;}
+
+  var FILTERS=[{k:"all",label:"All",test:function(){return true;}},
+    {k:"needs_review",label:"Needs review",dot:"var(--needs)",test:function(c){return c.status==="needs_review";}},
+    {k:"in_queue",label:"In queue",dot:"var(--queue)",test:function(c){return c.status==="in_queue";}},
+    {k:"overdue",label:"Overdue",test:function(c){return c.days<0;}},
+    {k:"week",label:"Due this week",test:function(c){return c.days>=0&&c.days<=6;}},
+    {k:"updated",label:"Updated",dot:"var(--updated)",test:function(c){return c.status==="updated";}}];
+  var active="all";
+  function filtered(){var f=FILTERS.find(function(x){return x.k===active;});return cases.filter(f.test);}
+  function ranked(list){return list.slice().sort(function(a,b){return STATUS[a.status].rank-STATUS[b.status].rank||a.days-b.days;});}
+  function topNext(){return ranked(cases.filter(function(c){return c.status!=="updated";}))[0];}
+
+  function renderChips(){var box=document.getElementById("chips");box.innerHTML="";FILTERS.forEach(function(f){
+    var n=cases.filter(f.test).length,b=document.createElement("button");b.className="chip";b.setAttribute("aria-pressed",active===f.k);
+    b.innerHTML=(f.dot?'<span class="d" style="background:'+f.dot+'"></span>':'')+f.label+' <span class="c">'+n+'</span>';
+    b.onclick=function(){active=f.k;render();};box.appendChild(b);});}
+
+  function renderRows(){
+    var list=ranked(filtered()),box=document.getElementById("rows");box.innerHTML="";
+    var next=topNext();
+    document.getElementById("qcount").textContent=list.length+" shown · sorted by what's due";
+    list.forEach(function(c){
+      var st=STATUS[c.status],du=dueLabel(c.days),b=document.createElement("button");
+      b.className="rowbtn"+(c===next?" next":"");
+      b.innerHTML='<div class="st"><span class="d" style="background:'+st.color+'"></span>'+st.label+'</div>'+
+        '<div class="who"><div class="nm">'+c.name+(c.safety?'<span class="safety">SAFETY</span>':'')+'</div><div class="mt">'+c.age+' · '+c.care+'</div></div>'+
+        '<div class="rt"><div class="due '+du.cls+'">'+du.t+'</div><span class="meter">'+meter(c.sc)+'</span><div class="prov"><b>'+c.sc.system+'</b>/11 from record</div></div>';
+      b.onclick=function(){openCapture(c);};
+      var m=b.querySelector(".meter");
+      m.addEventListener("mousemove",function(e){showTip(e.clientX,e.clientY,'<b style="color:#7fd8b0">'+c.sc.system+'</b> from record · '+c.sc.dictated+' captured · '+c.sc.needs_look+' to check · '+c.sc.blank+' blank');});
+      m.addEventListener("mouseleave",hideTip);
+      box.appendChild(b);
+    });
+  }
+
+  function renderNext(){var c=topNext();document.getElementById("nextCell").innerHTML=
+    '<div class="up">Up next · most overdue</div><div class="nm">'+c.name+(c.safety?'<span class="safety">SAFETY</span>':'')+'</div>'+
+    '<div class="mt">'+c.age+' · '+c.care+' · '+dueLabel(c.days).t+'</div>'+
+    '<button class="primary" id="startBtn">Start visit →</button>';
+    document.getElementById("startBtn").onclick=function(){openCapture(c);};}
+
+  function renderGlance(){
+    var over=cases.filter(function(c){return c.days<0;}).length,nr=cases.filter(function(c){return c.status==="needs_review";}).length,
+        iq=cases.filter(function(c){return c.status==="in_queue";}).length,up=cases.filter(function(c){return c.status==="updated";}).length;
+    document.getElementById("glance").innerHTML=
+      '<div class="ch" style="margin-bottom:8px"><h2 style="font-size:1rem">Your month</h2><span class="k">'+cases.length+' in care</span></div>'+
+      (over?'<div class="row hot"><span>Overdue</span><b>'+over+'</b></div>':'')+
+      '<div class="row"><span>Need review</span><b>'+nr+'</b></div>'+
+      '<div class="row"><span>In review queue</span><b>'+iq+'</b></div>'+
+      '<div class="row"><span>Updated this month</span><b>'+up+'</b></div>';
+  }
+
+  function render(){renderChips();renderRows();renderNext();renderGlance();}
+
+  // ---- capture drawer ----
+  var drawer=document.getElementById("drawer"),scrim=document.getElementById("scrim"),current=null;
+  function srcChip(src){var m=SM[src];return '<span class="chipsrc" style="background:'+m.color+'22;color:'+m.color+'">'+m.label+'</span>';}
+  function openCapture(c){
+    current=c;
+    document.getElementById("dName").innerHTML=c.name+(c.safety?'<span class="safety">SAFETY</span>':'');
+    document.getElementById("dMeta").textContent=c.age+" · "+c.care+" · FCH-2026-00"+(10+cases.indexOf(c));
+    // build fields: pre-filled (from record) get a Confirm; the rest invite entry; narrative = bullet jot pad
+    var buckets=[];ORDER.forEach(function(k){for(var i=0;i<c.sc[k];i++)buckets.push(k);});
+    var body='<div class="grp">Already on file — just confirm</div>';
+    L.fields.forEach(function(f,i){
+      if(f.key==="narrative")return;
+      var src=buckets[i]||"blank";
+      if(src==="system"){
+        body+='<div class="fld"><span><span class="fk">'+f.label+'</span> &nbsp;'+srcChip("system")+'</span><button class="confirm" data-c>Confirm</button></div>';
+      }
+    });
+    body+='<div class="grp">New this visit</div>';
+    L.fields.forEach(function(f,i){var src=buckets[i]||"blank";
+      if(f.key!=="narrative" && src!=="system"){
+        body+='<div class="fld"><span class="fk">'+f.label+(f.highRisk?' <span class="safety">MANUAL</span>':'')+'</span>'+srcChip(src)+'</div>';
+      }});
+    body+='<div class="grp">What happened — jot it in bullets</div>'+
+      '<textarea class="jot" id="capNotes" style="min-height:150px" placeholder="•  saw youth privately, doing well at school…" spellcheck="false"></textarea>';
+    document.getElementById("dBody").innerHTML=body;
+    document.querySelectorAll("#dBody .confirm").forEach(function(btn){btn.onclick=function(){btn.classList.toggle("done");btn.textContent=btn.classList.contains("done")?"✓ Confirmed":"Confirm";};});
+    bulletize(document.getElementById("capNotes"),true);
+    drawer.classList.add("on");scrim.classList.add("on");drawer.setAttribute("aria-hidden","false");
+    document.getElementById("dClose").focus();
+  }
+  function closeCapture(){drawer.classList.remove("on");scrim.classList.remove("on");drawer.setAttribute("aria-hidden","true");}
+  document.getElementById("dClose").onclick=closeCapture;
+  document.getElementById("dCancel").onclick=closeCapture;
+  scrim.onclick=closeCapture;
+  document.getElementById("dPost").onclick=function(){if(current){current.status="in_queue";current.days=Math.max(current.days,7);}closeCapture();render();};
+  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&drawer.classList.contains("on"))closeCapture();});
+
+  // bullet-jotting: Enter starts a new "• " line
+  function bulletize(el,seed){
+    if(seed && !el.value) el.value="•  ";
+    el.addEventListener("keydown",function(e){
+      if(e.key==="Enter"){e.preventDefault();var s=el.selectionStart;el.value=el.value.slice(0,s)+"\n•  "+el.value.slice(s);el.selectionStart=el.selectionEnd=s+4;}
+    });
+    el.addEventListener("focus",function(){if(!el.value)el.value="•  ",el.selectionStart=el.selectionEnd=3;});
+  }
+  bulletize(document.getElementById("scratch"),false);
+
+  // clock (no live Date in build env — set once on load in the browser)
+  try{var d=new Date();var h=d.getHours(),m=d.getMinutes();document.getElementById("clock").textContent=((h%12)||12)+":"+String(m).padStart(2,"0")+" "+(h<12?"AM":"PM");}catch(e){document.getElementById("clock").textContent="";}
+
+  render();
+})();
+</script>
+</body>
+</html>

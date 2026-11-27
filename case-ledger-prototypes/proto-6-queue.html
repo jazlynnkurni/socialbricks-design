@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Ledger, reframed — a ranked work queue</title>
+<style>
+  :root{
+    --bg:#F4F2EC; --surface:#FFFFFF; --ink:#232B27; --ink2:#5b625d; --ink3:#8a918b;
+    --line:rgba(35,43,39,.12); --line2:rgba(35,43,39,.07);
+    --teal:#3F7E6E; --teal-ink:#2E6152; --teal-bg:rgba(63,126,110,.10);
+    --needs:#C0632F; --prog:#B4802E; --queue:#3F7E6E; --updated:#9AA0A6; --overdue:#B23B2E;
+    --sys:#3F7E6E; --dict:#B4802E; --need:#C0632F; --blank:#C7CCC8;
+    --sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.45}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wrap{max-width:1080px;margin:0 auto;padding:clamp(20px,3.5vw,40px) clamp(16px,4vw,44px) 64px}
+  /* header */
+  .head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+  .head .eye{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--teal-ink)}
+  .head h1{font-size:clamp(1.7rem,3.6vw,2.3rem);font-weight:600;letter-spacing:-.02em;margin:6px 0 4px}
+  .head .sub{font-size:.9rem;color:var(--ink2)}
+  .cta{display:inline-flex;align-items:center;gap:9px;background:var(--teal);color:#fff;border:0;border-radius:12px;
+    font-family:var(--sans);font-weight:600;font-size:.95rem;padding:13px 22px;cursor:pointer;box-shadow:0 6px 18px rgba(46,97,82,.24);
+    transition:transform .12s ease,background .15s ease}
+  .cta:hover{background:#356a5c}.cta:active{transform:scale(.98)}
+  .cta:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+  .cta small{font-weight:500;opacity:.85;font-size:.8rem}
+  /* summary strip — one line, not tiles */
+  .summary{display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap;font-size:.9rem;color:var(--ink2);
+    padding:12px 2px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:18px}
+  .summary b{color:var(--ink);font-weight:600}
+  .summary .hot{color:var(--overdue);font-weight:600}
+  .summary .sep{width:1px;height:14px;background:var(--line)}
+  /* controls */
+  .controls{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+  .search{position:relative;flex:1;min-width:220px;max-width:360px}
+  .search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:11px 14px 11px 38px;font:inherit;font-size:.92rem;color:var(--ink)}
+  .search input:focus{outline:2px solid var(--teal);outline-offset:0;border-color:transparent}
+  .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.5}
+  .sort{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--ink2)}
+  .sort select{font:inherit;font-size:.88rem;font-weight:500;color:var(--ink);background:var(--surface);
+    border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer}
+  /* chips — decisions, not letters */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:8px 14px;font-size:.86rem;font-weight:500;color:var(--ink2);cursor:pointer;transition:all .14s ease}
+  .chip:hover{border-color:rgba(35,43,39,.28)}
+  .chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip .c{font-family:var(--mono);font-size:.76rem;opacity:.8}
+  .chip .dot{width:7px;height:7px;border-radius:50%}
+  .chip:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  /* list */
+  .listhead{display:grid;grid-template-columns:170px 1fr 120px 200px 92px;gap:16px;padding:0 16px 8px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+  .list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .row{display:grid;grid-template-columns:170px 1fr 120px 200px 92px;gap:16px;align-items:center;
+    padding:14px 16px;border-bottom:1px solid var(--line2);cursor:pointer;transition:background .12s ease}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:rgba(63,126,110,.045)}
+  .row.next{background:rgba(63,126,110,.09);box-shadow:inset 3px 0 0 var(--teal)}
+  .status{display:inline-flex;align-items:center;gap:8px;font-size:.82rem;font-weight:600}
+  .status .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .who .nm{font-weight:600;font-size:.98rem}
+  .who .meta{font-size:.8rem;color:var(--ink2);margin-top:1px}
+  .safety{margin-left:7px;font-family:var(--mono);font-size:9px;letter-spacing:.05em;color:var(--overdue);
+    border:1px solid rgba(178,59,46,.4);border-radius:4px;padding:1px 5px;vertical-align:middle}
+  .due{font-size:.86rem;color:var(--ink2)}
+  .due.over{color:var(--overdue);font-weight:600}
+  .due.week{color:var(--prog);font-weight:600}
+  /* provenance meter — the differentiator */
+  .prov{display:flex;align-items:center;gap:9px}
+  .meter{display:flex;height:8px;width:96px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(35,43,39,.08);flex:0 0 auto}
+  .meter i{display:block;height:100%}
+  .prov .lbl{font-family:var(--mono);font-size:.76rem;color:var(--ink2);white-space:nowrap}
+  .prov .lbl b{color:var(--sys)}
+  .open{justify-self:end;display:inline-flex;align-items:center;gap:5px;font-size:.84rem;font-weight:600;color:var(--teal-ink);
+    background:none;border:0;cursor:pointer;font-family:var(--sans);padding:6px 4px}
+  .row:hover .open{text-decoration:underline}
+  .empty{padding:34px 16px;text-align:center;color:var(--ink3);font-size:.9rem}
+  .tip{position:fixed;pointer-events:none;background:#1a231f;color:#fff;border-radius:7px;padding:7px 10px;
+    font-size:11px;font-family:var(--mono);opacity:0;transition:opacity .12s;z-index:30;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  .foot{margin-top:20px;font-size:.8rem;color:var(--ink3);line-height:1.6}
+  .foot b{color:var(--ink2)}
+  @media (max-width:820px){
+    .listhead{display:none}
+    .row{grid-template-columns:1fr auto;gap:8px 12px;grid-template-areas:"who status" "who due" "prov open"}
+    .status{grid-area:status;justify-self:end}.who{grid-area:who}.due{grid-area:due;justify-self:end}
+    .prov{grid-area:prov}.open{grid-area:open}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<script src="../shared/data.js"></script>
+<div class="tip" id="tip"></div>
+<div class="wrap">
+
+  <header class="head">
+    <div>
+      <div class="eye">Fostr Chronicle · Case ledger</div>
+      <h1>What needs you, first.</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <button class="cta" id="startNext">Start next visit <small id="nextName"></small> →</button>
+  </header>
+
+  <!-- summary: one honest line, not a grid of tiles -->
+  <div class="summary" id="summary"></div>
+
+  <div class="controls">
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="Search by name" aria-label="Search by name" />
+    </div>
+    <div class="sort"><label for="sort">Sort</label>
+      <select id="sort"><option value="attention">Attention (what's due)</option><option value="due">Due date</option><option value="name">Name</option></select>
+    </div>
+  </div>
+
+  <!-- chips: decisions, not the alphabet -->
+  <div class="chips" id="chips" role="group" aria-label="Filter the queue"></div>
+
+  <div class="listhead"><span>Status</span><span>Case</span><span>Next visit</span><span>Captured from record</span><span></span></div>
+  <div class="list" id="list"></div>
+
+  <p class="foot">
+    <b>The reframe:</b> one ranked queue sorted by what's due — no alphabet, no mode-fork, no tile-soup.
+    Filters are <b>decisions</b> a caseworker actually makes. Every row surfaces its <b>provenance</b>
+    (how much came straight from the record) — the thing that makes Fostr, Fostr.
+  </p>
+</div>
+
+<script>
+(function(){
+  var L=window.LEDGER, SM=L.sourceMeta;
+  var STATUS={
+    needs_review:{label:"Needs review", color:"var(--needs)", rank:0},
+    in_progress:{label:"In progress",  color:"var(--prog)",  rank:1},
+    in_queue:{label:"In review queue", color:"var(--queue)", rank:2},
+    updated:{label:"Updated",          color:"var(--updated)",rank:3}
+  };
+  var ORDER=["system","dictated","needs_look","blank"];
+  var tip=document.getElementById("tip");
+  function showTip(x,y,h){tip.innerHTML=h;tip.style.left=(x+12)+"px";tip.style.top=(y+12)+"px";tip.style.opacity=1;}
+  function hideTip(){tip.style.opacity=0;}
+
+  // A realistic 20-case caseload matching the real app (12 needs review / 5 queue / 3 updated),
+  // with due offsets (days from today; negative = overdue) so the ranked order is meaningful.
+  var NAMES=["Aaliyah Nguyen","Marcus Alvarez","Andre Baptiste","Priya Desai","DeShawn Carter",
+    "Nia Washington","Cameron Reyes","Leah Goldstein","Xavier Dubois","Sofia Herrera",
+    "Jamal Robinson","Mei Lin","Emma Sullivan","Kai Tanaka","Isaiah Brooks",
+    "Lucia Romano","Noah Whitefeather","Ava Thompson","Diego Morales","Hannah Cohen"];
+  var AGES=[16,14,19,6,12,9,11,7,15,7,13,10,5,15,4,8,11,16,9,6];
+  var CARE=["In care","In care","Extended (18-22)","In care","In care","In care","In care","In care","In care","In care",
+    "In care","In care","In care","In care","In care","In care","In care","Extended (18-22)","In care","In care"];
+  // days-from-today for the next required visit; needs_review skew overdue/soon
+  var DAYS=[-4,-1,1,2,3,4,5,6,6,7,8,9,10,4,11,12,13,15,16,20];
+  var SCS=[[5,3,2,1],[7,2,1,1],[5,4,1,1],[6,3,1,1],[6,4,1,0],[6,3,1,1],[5,4,1,1],[7,2,1,1],[5,3,2,1],[6,3,1,1],
+    [7,3,0,1],[6,3,1,1],[8,2,1,0],[5,4,1,1],[6,3,1,1],[7,3,1,0],[6,3,1,1],[7,2,1,1],[6,3,1,1],[6,3,2,0]];
+
+  var cases=NAMES.map(function(nm,i){
+    var status = i<12 ? "needs_review" : i<17 ? "in_queue" : "updated";
+    var sc={system:SCS[i][0],dictated:SCS[i][1],needs_look:SCS[i][2],blank:SCS[i][3]};
+    return {name:nm, age:AGES[i], care:CARE[i], status:status, days:DAYS[i], sc:sc, safety:(i===0)};
+  });
+
+  function dueLabel(d){
+    if(d<0) return {t:(-d)+"d overdue", cls:"over"};
+    if(d===0) return {t:"today", cls:"week"};
+    if(d<=6) return {t:"in "+d+"d", cls:"week"};
+    var base=new Date(2026,6,29); // Jul 29 2026 reference (date not read live)
+    return {t:"in "+d+"d", cls:""};
+  }
+
+  // filters = decisions
+  var FILTERS=[
+    {k:"all",   label:"All",           test:function(){return true;}},
+    {k:"needs_review", label:"Needs review", dot:"var(--needs)", test:function(c){return c.status==="needs_review";}},
+    {k:"in_queue", label:"In queue",    dot:"var(--queue)", test:function(c){return c.status==="in_queue";}},
+    {k:"in_progress", label:"In progress", dot:"var(--prog)", test:function(c){return c.status==="in_progress";}},
+    {k:"overdue", label:"Overdue",      test:function(c){return c.days<0;}},
+    {k:"week",   label:"Due this week", test:function(c){return c.days>=0 && c.days<=6;}},
+    {k:"updated", label:"Updated",      dot:"var(--updated)", test:function(c){return c.status==="updated";}}
+  ];
+  var active="all", query="", sortMode="attention";
+
+  function filtered(){
+    var f=FILTERS.find(function(x){return x.k===active;});
+    return cases.filter(function(c){
+      return f.test(c) && c.name.toLowerCase().indexOf(query.toLowerCase())>=0;
+    });
+  }
+  function sorted(list){
+    var l=list.slice();
+    if(sortMode==="name") l.sort(function(a,b){return a.name.localeCompare(b.name);});
+    else if(sortMode==="due") l.sort(function(a,b){return a.days-b.days;});
+    else l.sort(function(a,b){ // attention: status rank, then soonest due
+      return STATUS[a.status].rank-STATUS[b.status].rank || a.days-b.days;
+    });
+    return l;
+  }
+  function topOfQueue(){ return sorted(cases.filter(function(c){return c.status!=="updated";}))[0]; }
+
+  function meter(sc){
+    var tot=sc.system+sc.dictated+sc.needs_look+sc.blank, h='';
+    ORDER.forEach(function(k){ if(sc[k]>0) h+='<i style="width:'+(sc[k]/tot*100).toFixed(2)+'%;background:'+SM[k].color+'"></i>'; });
+    return h;
+  }
+
+  function renderChips(){
+    var box=document.getElementById("chips"); box.innerHTML="";
+    FILTERS.forEach(function(f){
+      var n=cases.filter(f.test).length;
+      var b=document.createElement("button");
+      b.className="chip"; b.setAttribute("aria-pressed", active===f.k);
+      b.innerHTML=(f.dot?'<span class="dot" style="background:'+f.dot+'"></span>':'')+f.label+' <span class="c">'+n+'</span>';
+      b.onclick=function(){active=f.k; render();};
+      box.appendChild(b);
+    });
+  }
+
+  function render(){
+    var list=sorted(filtered());
+    var box=document.getElementById("list"); box.innerHTML="";
+    if(!list.length){ box.innerHTML='<div class="empty">No cases match. Try another filter or clear the search.</div>'; }
+    var next=topOfQueue();
+    list.forEach(function(c){
+      var st=STATUS[c.status], du=dueLabel(c.days);
+      var row=document.createElement("div"); row.className="row"+(c===next?" next":"");
+      row.innerHTML=
+        '<div class="status"><span class="dot" style="background:'+st.color+'"></span>'+st.label+'</div>'+
+        '<div class="who"><div class="nm">'+c.name+(c.safety?'<span class="safety">SAFETY</span>':'')+'</div>'+
+          '<div class="meta">'+c.age+' · '+c.care+'</div></div>'+
+        '<div class="due '+du.cls+'">'+du.t+'</div>'+
+        '<div class="prov"><span class="meter">'+meter(c.sc)+'</span>'+
+          '<span class="lbl"><b>'+c.sc.system+'</b>/11</span></div>'+
+        '<button class="open">'+(c.status==="updated"?"View":c.status==="in_queue"?"Review":"Open")+' →</button>';
+      var pv=row.querySelector(".prov");
+      pv.addEventListener("mousemove",function(e){showTip(e.clientX,e.clientY,
+        '<b style="color:#7fd8b0">'+c.sc.system+'</b> from record · '+c.sc.dictated+' you captured · '+c.sc.needs_look+' to check · '+c.sc.blank+' blank');});
+      pv.addEventListener("mouseleave",hideTip);
+      box.appendChild(row);
+    });
+    renderChips();
+    // header summary
+    var over=cases.filter(function(c){return c.days<0;}).length;
+    var nr=cases.filter(function(c){return c.status==="needs_review";}).length;
+    var iq=cases.filter(function(c){return c.status==="in_queue";}).length;
+    var up=cases.filter(function(c){return c.status==="updated";}).length;
+    document.getElementById("summary").innerHTML=
+      '<span><b>'+cases.length+'</b> in your care</span><span class="sep"></span>'+
+      (over?'<span class="hot">'+over+' overdue</span><span class="sep"></span>':'')+
+      '<span><b>'+nr+'</b> need review</span><span class="sep"></span>'+
+      '<span><b>'+iq+'</b> in queue</span><span class="sep"></span>'+
+      '<span><b>'+up+'</b> updated this month</span>';
+    document.getElementById("sub").textContent=L.worker.name+" · "+L.worker.team;
+    document.getElementById("nextName").textContent=next?"· "+next.name.split(" ")[0]:"";
+  }
+
+  document.getElementById("search").addEventListener("input",function(){query=this.value;render();});
+  document.getElementById("sort").addEventListener("change",function(){sortMode=this.value;render();});
+  document.getElementById("startNext").addEventListener("click",function(){
+    active="all"; query=""; sortMode="attention"; document.getElementById("search").value=""; document.getElementById("sort").value="attention";
+    render();
+    var el=document.querySelector(".row.next"); if(el){el.scrollIntoView({behavior:"smooth",block:"center"});
+      el.animate([{background:"rgba(63,126,110,.28)"},{background:"rgba(63,126,110,.09)"}],{duration:900});}
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

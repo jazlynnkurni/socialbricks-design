@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr — 5 login directions</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  body { min-height: 100vh; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 60px 26px 90px; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--teal); }
+  .brand b { color: var(--ink); font-size: 1.05rem; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 600; letter-spacing: -0.025em; margin: 16px 0 12px; max-width: 20ch; line-height: 1.08; }
+  .lede { font-size: 1.04rem; color: var(--ink-2); max-width: 66ch; line-height: 1.6; }
+  .goals { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 4px; }
+  .goal { font-size: 0.82rem; color: var(--teal-deep); border: 1px solid color-mix(in srgb, var(--teal) 40%, transparent); border-radius: 999px; padding: 5px 12px; background: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; margin-top: 32px; }
+  a.card { display: block; text-decoration: none; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; transition: border-color .18s, transform .18s, box-shadow .18s; }
+  a.card:hover { border-color: color-mix(in srgb, var(--teal) 55%, var(--line)); transform: translateY(-2px); box-shadow: 0 14px 32px rgba(23,58,57,0.08); }
+  .num { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1.5px solid var(--teal); background: #fff; color: var(--teal-deep); border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+  .vname { font-size: 1.2rem; font-weight: 600; letter-spacing: -0.015em; margin: 12px 0 8px; }
+  .vdesc { font-size: 0.94rem; color: var(--ink-2); line-height: 1.55; margin: 0; }
+  .open { margin-top: 15px; font-size: 0.82rem; font-weight: 600; color: var(--teal-deep); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21v-9"/><path d="M12 12C12 8 9 5 4 5c0 4 3 7 8 7Z"/><path d="M12 12c0-3 3-6 8-6 0 4-3 6-8 6Z"/></svg>
+      <b>Fostr</b>
+    </div>
+    <h1>Five ways to sign in</h1>
+    <p class="lede">Same brand, same fields — five feelings for the first screen a child-welfare caseworker sees. Each is calm, minimal, and trustworthy, with one modern interaction. Open them, then tell me the direction (or the parts to mix).</p>
+    <div class="goals">
+      <span class="goal">Intuitive for social workers</span>
+      <span class="goal">Interactive</span>
+      <span class="goal">Future-forward</span>
+      <span class="goal">Minimal &amp; calm</span>
+      <span class="goal">iPad-first</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+  <script>
+    const V = [
+      { n:1, f:"v1.html", name:"Calm Field", d:"One centered card on a slow, living teal background. The reassuring low-stress default — what a tired worker opens at 8pm." },
+      { n:2, f:"v2.html", name:"Brand Split", d:"A teal brand panel with one honest human line and subtle motion, beside a clean form. Familiar and trustworthy, done calm." },
+      { n:3, f:"v3.html", name:"One thing at a time", d:"A gentle guided flow — one field per step, big friendly type. Lowest intimidation for non-technical field workers." },
+      { n:4, f:"v4.html", name:"Agency-first", d:"Leads with 'Continue with your agency' + a passkey hint; password tucked under a quiet reveal. Where enterprise auth is heading." },
+      { n:5, f:"v5.html", name:"Living mark", d:"The Fostr sprout as a breathing, pointer-reactive centerpiece above a minimal form. The brand's living identity, on first sight." },
+      { n:6, f:"v6.html", name:"Immersive", d:"A living teal canvas — drifting aurora + faint dot-field — with the real white wordmark and a floating frosted-glass sign-in card that lifts in. Premium and calm." },
+    ];
+    document.getElementById("grid").innerHTML = V.map(v => `
+      <a class="card" href="${v.f}">
+        <span class="num">${v.n}</span>
+        <div class="vname">${v.name}</div>
+        <p class="vdesc">${v.d}</p>
+        <div class="open">Open ${v.f} →</div>
+      </a>`).join("");
+  </script>
+</body>
+</html>

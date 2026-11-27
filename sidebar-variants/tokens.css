@@ -1,0 +1,31 @@
+/* Fostr sidebar lab — shared tokens. Real Inter (the app's font) + Fostr teal.
+   Every variant links this and adds only its own layout + micro-animation CSS. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --ink: #1f2725;
+  --ink-2: #55635f;
+  --ink-3: #8a9793;
+  --paper: #ffffff;
+  --canvas: #f4f7f6;
+  --line: #e7edec;
+  --line-2: #f0f4f3;
+  --teal: #3d8b88;      /* brand-400 family */
+  --teal-deep: #2a6a68; /* brand-700 */
+  --teal-tint: #eef5f4;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --tap: 44px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: var(--sans); color: var(--ink); background: var(--canvas); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+button, a { font: inherit; color: inherit; }
+
+/* a faint dotted canvas for the mock content area, so the sidebar reads in context */
+.dotgrid {
+  background-color: var(--canvas);
+  background-image: radial-gradient(color-mix(in srgb, var(--teal) 22%, transparent) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+.eyebrow { font-size: 0.68rem; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }

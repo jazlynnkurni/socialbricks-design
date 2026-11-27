@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fostr Fieldbook — Progressive Focus</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* ---- layout only; visual language comes from tokens.css ---- */
+  .app { display: grid; grid-template-columns: 64px 1fr; min-height: 100vh; }
+
+  /* slim left nav rail */
+  .rail {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 18px 0; background: var(--paper);
+    border-right: 1px solid var(--line);
+  }
+  .rail .brand { width: 30px; height: 30px; display: grid; place-items: center; margin-bottom: 14px; color: var(--teal-deep); }
+  .rail a {
+    width: var(--tap); height: var(--tap); border-radius: 12px;
+    display: grid; place-items: center; color: var(--ink-3);
+    text-decoration: none;
+  }
+  .rail a:hover { color: var(--ink-2); background: var(--line-2); }
+  .rail a.on { color: var(--teal-deep); background: var(--teal-tint); }
+  .rail .spacer { flex: 1; }
+
+  /* main column */
+  .main { min-width: 0; }
+
+  /* top strip: worker name + caseload counts */
+  .topstrip {
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 16px clamp(20px, 5vw, 56px);
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .topstrip .who { font-weight: 600; }
+  .topstrip .who span { color: var(--ink-3); font-weight: 400; margin-left: 8px; font-size: var(--fs-meta); }
+  .topstrip .counts { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  .topstrip .cx { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-meta); color: var(--ink-2); }
+
+  /* the one calm canvas */
+  .canvas { padding: clamp(28px, 5vw, 64px) clamp(20px, 5vw, 56px) 120px; }
+  .sheet { max-width: 68ch; margin: 0 auto; }
+
+  /* header */
+  .head { margin-bottom: 30px; }
+  .head h1 { font-size: var(--fs-hero); font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .head .sub { color: var(--ink-2); font-size: var(--fs-meta); margin-bottom: 10px; }
+  .head .statusline { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-meta); color: var(--ink-2); }
+
+  /* distilled one-liner + expandable full summary */
+  .distill { margin: 26px 0 30px; }
+  .distill .oneline { font-size: 1.06rem; line-height: 1.55; color: var(--ink); margin: 0; }
+  .distill .more {
+    background: none; border: none; padding: 8px 0 0; margin: 0;
+    color: var(--teal-deep); font-weight: 600; font-size: var(--fs-meta);
+    display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
+  }
+  .distill .more:hover { color: var(--teal); }
+  .distill .more .chev { transition: transform .28s ease; display: inline-flex; }
+  .distill.open .more .chev { transform: rotate(180deg); }
+
+  /* generic smooth disclosure */
+  .reveal { display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows .32s ease, opacity .28s ease; }
+  .reveal > .revin { overflow: hidden; min-height: 0; }
+  .reveal.open { grid-template-rows: 1fr; opacity: 1; }
+
+  .fullsum { padding-top: 14px; color: var(--ink-2); font-size: var(--fs-body); line-height: 1.6; }
+
+  /* due tasks — outline/text chips only */
+  .tasks { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 40px;
+    padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px;
+    font-size: var(--fs-meta); color: var(--ink); background: none;
+  }
+  .chip .dot { width: 6px; height: 6px; }
+
+  /* composer — plain inline field, NO box */
+  .composer { margin: 8px 0 26px; }
+  .consent {
+    display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+    font-size: var(--fs-meta); color: var(--ink-2); margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .consent .flag { color: var(--st-safety); }
+  .compose {
+    font: inherit; font-size: 1.06rem; line-height: 1.6; color: var(--ink);
+    width: 100%; border: none; outline: none; background: none;
+    resize: none; min-height: 2.6em; padding: 0;
+    border-bottom: 1px solid var(--line);
+    transition: border-color .2s ease;
+  }
+  .compose::placeholder { color: var(--ink-3); }
+  .compose:focus { border-bottom-color: var(--teal); }
+  .comptools { display: flex; align-items: center; gap: 4px; margin-top: 12px; }
+  .comptools .fmt {
+    width: 34px; height: 34px; border-radius: 8px; border: none; background: none;
+    color: var(--ink-3); display: grid; place-items: center; font-size: 0.9rem;
+  }
+  .comptools .fmt:hover { color: var(--ink); background: var(--line-2); }
+  .comptools .fmt.italic { font-style: italic; }
+  .comptools .fmt.bold { font-weight: 700; }
+  .compfoot { display: flex; align-items: center; gap: 16px; margin-top: 14px; flex-wrap: wrap; }
+  .helper { color: var(--ink-3); font-size: var(--fs-micro); flex: 1; min-width: 200px; }
+  /* the ONE filled teal primary */
+  .save {
+    border: none; background: var(--teal); color: #fff; font-weight: 600;
+    padding: 0 20px; height: var(--tap); border-radius: 10px; font-size: var(--fs-meta);
+  }
+  .save:hover { background: var(--teal-deep); }
+
+  /* history expander */
+  .histzone { border-top: 1px solid var(--line); padding-top: 20px; }
+  .histtoggle {
+    background: none; border: none; padding: 6px 0; width: 100%;
+    display: flex; align-items: center; gap: 10px; min-height: var(--tap);
+    color: var(--ink); font-size: var(--fs-body); font-weight: 600;
+  }
+  .histtoggle .chev { transition: transform .28s ease; display: inline-flex; color: var(--ink-3); }
+  .histzone.open .histtoggle .chev { transform: rotate(90deg); }
+  .histtoggle .count { margin-left: 2px; }
+  .histtoggle .hint { margin-left: auto; font-weight: 400; color: var(--ink-3); font-size: var(--fs-micro); }
+  .histzone.open .histtoggle .hint { opacity: 0; }
+
+  /* timeline */
+  .timeline { padding: 8px 0 0; }
+  .entry { padding: 18px 0; border-bottom: 1px solid var(--line-2); }
+  .entry:last-child { border-bottom: none; }
+
+  .visit .vhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .visit .vdate { font-weight: 600; font-size: var(--fs-meta); }
+  .visit .vlabel { display: inline-flex; align-items: center; gap: 7px; font-size: var(--fs-meta); color: var(--ink-2); }
+  .visit .vmeter { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+  .visit .vmeter .cap { font-size: var(--fs-micro); color: var(--ink-3); }
+
+  .recordtoggle {
+    background: none; border: none; padding: 8px 0 0; min-height: 40px;
+    color: var(--teal-deep); font-weight: 600; font-size: var(--fs-micro);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .recordtoggle:hover { color: var(--teal); }
+  .recordtoggle .chev { transition: transform .28s ease; display: inline-flex; }
+  .recordwrap.open .recordtoggle .chev { transform: rotate(180deg); }
+  .recorddetail {
+    padding-top: 12px; display: flex; flex-direction: column; gap: 6px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: var(--fs-micro); color: var(--ink-3); letter-spacing: 0.01em;
+  }
+  .recorddetail .rrow { display: flex; gap: 10px; }
+  .recorddetail .rrow b { color: var(--ink-2); font-weight: 600; min-width: 62px; }
+  .recorddetail .amend {
+    align-self: flex-start; margin-top: 6px; font-family: var(--sans);
+    background: none; border: none; padding: 6px 0; min-height: 40px;
+    color: var(--ink-3); font-size: var(--fs-micro); font-weight: 600;
+  }
+  .recorddetail .amend:hover { color: var(--ink-2); }
+
+  .note .ntext { color: var(--ink); line-height: 1.62; margin: 0; }
+  .note .nmeta { margin-top: 8px; font-size: var(--fs-micro); color: var(--ink-3); }
+
+  @media (max-width: 1080px) {
+    .app { grid-template-columns: 56px 1fr; }
+    .sheet { max-width: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- slim left nav rail -->
+  <nav class="rail" aria-label="Primary">
+    <div class="brand" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3c2.2 0 4 1.8 4 4 0 .7-.2 1.4-.5 2 .3-.1.6-.1 1-.1 2.2 0 4 1.8 4 4s-1.8 4-4 4c-1.6 0-3-.9-3.6-2.3"/>
+        <path d="M12 21c-2.2 0-4-1.8-4-4 0-.7.2-1.4.5-2-.3.1-.6.1-1 .1-2.2 0-4-1.8-4-4s1.8-4 4-4c1.6 0 3 .9 3.6 2.3"/>
+      </svg>
+    </div>
+    <a href="#" class="on" aria-label="Cases" aria-current="page">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H9l2 2.5h7.5A1.5 1.5 0 0 1 20 8v10.5A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5Z"/></svg>
+    </a>
+    <a href="#" aria-label="Review queue">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>
+    </a>
+    <a href="#" aria-label="Search">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-3.6-3.6"/></svg>
+    </a>
+    <a href="#" aria-label="Seals and records">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4 3 6.5 7 8 4-1.5 7-4 7-8V6Z"/><path d="m9 12 2 2 4-4"/></svg>
+    </a>
+    <div class="spacer"></div>
+    <a href="#" aria-label="Settings">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+    </a>
+  </nav>
+
+  <div class="main">
+    <!-- top strip -->
+    <header class="topstrip">
+      <div class="who" id="workerName">—</div>
+      <div class="counts" id="counts"></div>
+    </header>
+
+    <!-- the one canvas -->
+    <main class="canvas dotgrid">
+      <div class="sheet" id="sheet"><!-- rendered --></div>
+    </main>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  var F = window.FOSTR, O = F.open;
+
+  // helpers
+  function el(html) { var t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]; }); }
+  var chev = '<span class="chev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>';
+  var chevRight = '<span class="chev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>';
+
+  // top strip
+  document.getElementById("workerName").innerHTML =
+    esc(F.worker.name) + '<span>Field social worker</span>';
+  var counts = [
+    { k: "all", label: "caseload" },
+    { k: "review", label: "to review" },
+    { k: "safety", label: "safety" },
+  ];
+  document.getElementById("counts").innerHTML = counts.map(function (c) {
+    return '<span class="cx">' + esc(c.label) + ' <span class="count">' + F.counts[c.k] + '</span></span>';
+  }).join("");
+
+  // distilled one-liner (first sentence of the AI summary)
+  var oneLine = O.aiSummary.split(". ")[0] + ".";
+
+  var sheet = document.getElementById("sheet");
+  sheet.innerHTML =
+    '<section class="head">' +
+      '<h1>' + esc(O.name) + '</h1>' +
+      '<div class="sub">' + O.age + ' · ' + esc(O.care) + ' · ' + esc(O.caseId) + '</div>' +
+      '<div class="statusline"><span class="dot ' + O.status + '"></span>' + esc(O.statusLabel) + '</div>' +
+    '</section>' +
+
+    '<section class="distill" id="distill">' +
+      '<p class="oneline">' + esc(oneLine) + '</p>' +
+      '<button class="more" id="moreBtn" aria-expanded="false">Full summary and due tasks ' + chev + '</button>' +
+      '<div class="reveal" id="fullReveal"><div class="revin">' +
+        '<p class="fullsum">' + esc(O.aiSummary) + '</p>' +
+        '<div class="tasks">' +
+          O.tasks.map(function (t) { return '<span class="chip"><span class="dot review"></span>' + esc(t) + '</span>'; }).join("") +
+        '</div>' +
+      '</div></div>' +
+    '</section>' +
+
+    // composer — plain inline field, no box
+    '<section class="composer">' +
+      '<div class="consent"><span class="flag">' + esc(O.composer.consent) + '</span>' +
+        '<a href="#" class="tbtn" style="padding:0">Record consent</a></div>' +
+      '<textarea class="compose" id="compose" rows="2" placeholder="' + esc(O.composer.placeholder) + '"></textarea>' +
+      '<div class="comptools">' +
+        '<button class="fmt bold" title="Bold">B</button>' +
+        '<button class="fmt italic" title="Italic">I</button>' +
+        '<button class="fmt" title="List" aria-label="List">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="compfoot">' +
+        '<span class="helper">' + esc(O.composer.helper) + '</span>' +
+        '<button class="save">Save note</button>' +
+      '</div>' +
+    '</section>' +
+
+    // history expander
+    '<section class="histzone" id="histzone">' +
+      '<button class="histtoggle" id="histToggle" aria-expanded="false">' +
+        chevRight + 'Case history <span class="count">' + O.history.length + '</span>' +
+        '<span class="hint">tap to open the timeline</span>' +
+      '</button>' +
+      '<div class="reveal" id="histReveal"><div class="revin">' +
+        '<div class="timeline">' + O.history.map(renderEntry).join("") + '</div>' +
+      '</div></div>' +
+    '</section>';
+
+  function renderEntry(h, i) {
+    if (h.kind === "visit") {
+      var record = "";
+      if (h.sealed) {
+        record =
+          '<div class="recordwrap" id="rw' + i + '">' +
+            '<button class="recordtoggle" data-record="' + i + '" aria-expanded="false">Show record details ' + chev + '</button>' +
+            '<div class="reveal" id="rr' + i + '"><div class="revin">' +
+              '<div class="recorddetail">' +
+                '<div class="rrow"><b>sealed</b> ' + esc(h.sealed) + '</div>' +
+                '<div class="rrow"><b>SOR</b> ' + esc(h.sor) + '</div>' +
+                (h.delivered ? '<div class="rrow"><b>status</b> delivered · court-ready</div>' : '') +
+                (h.amend ? '<button class="amend">Amend record</button>' : '') +
+              '</div>' +
+            '</div></div>' +
+          '</div>';
+      }
+      return '<article class="entry visit">' +
+        '<div class="vhead">' +
+          '<span class="vdate">' + esc(h.date) + '</span>' +
+          '<span class="vlabel"><span class="dot ' + h.status + '"></span>' + esc(h.statusLabel) + '</span>' +
+          (h.meter ? '<span class="vmeter"><span class="cap">from record</span><span class="meter"><i style="width:' + (h.meter / 7 * 100) + '%"></i></span></span>' : '') +
+        '</div>' + record +
+      '</article>';
+    }
+    return '<article class="entry note">' +
+      '<p class="ntext">' + esc(h.text) + '</p>' +
+      '<div class="nmeta">' + esc(h.noteType) + ' · ' + esc(h.author) + ' · ' + esc(h.date) + '</div>' +
+    '</article>';
+  }
+
+  // ---- interactions: smooth inline disclosures ----
+  function toggle(btn, wrap, reveal) {
+    var open = reveal.classList.toggle("open");
+    wrap.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  var distill = document.getElementById("distill");
+  document.getElementById("moreBtn").addEventListener("click", function () {
+    toggle(this, distill, document.getElementById("fullReveal"));
+  });
+
+  var histzone = document.getElementById("histzone");
+  document.getElementById("histToggle").addEventListener("click", function () {
+    toggle(this, histzone, document.getElementById("histReveal"));
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-record]"), function (btn) {
+    var i = btn.getAttribute("data-record");
+    btn.addEventListener("click", function () {
+      toggle(btn, document.getElementById("rw" + i), document.getElementById("rr" + i));
+      btn.firstChild.textContent = btn.getAttribute("aria-expanded") === "true" ? "Hide record details " : "Show record details ";
+    });
+  });
+
+  // auto-grow the compose field
+  var ta = document.getElementById("compose");
+  ta.addEventListener("input", function () {
+    ta.style.height = "auto";
+    ta.style.height = ta.scrollHeight + "px";
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr sidebar — Immersive teal</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* v6 "Immersive teal" sidebar — matches the immersive glass login: a teal
+     gradient panel with frosted-glass nav, white wordmark, a gliding glass
+     active pill. Micro-animations throughout; prefers-reduced-motion safe. */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ---------- the immersive teal sidebar ---------- */
+  .side {
+    position: relative;
+    width: 250px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px 16px;
+    color: #fff;
+    overflow: hidden;
+    isolation: isolate;
+    background: linear-gradient(158deg, var(--teal) 0%, var(--teal-deep) 86%);
+    transition: width .34s cubic-bezier(.4,0,.2,1);
+  }
+  .side.collapsed { width: 78px; }
+  /* drifting aura + dot texture */
+  .side::before {
+    content: ""; position: absolute; inset: -30%; z-index: 0; pointer-events: none;
+    background: radial-gradient(38% 34% at 20% 12%, color-mix(in srgb,#fff 20%,transparent), transparent 70%),
+               radial-gradient(34% 30% at 88% 82%, color-mix(in srgb,#fff 14%,transparent), transparent 70%);
+    animation: drift 26s ease-in-out infinite;
+  }
+  .side::after {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-image: radial-gradient(color-mix(in srgb,#fff 10%,transparent) 1px, transparent 1.4px);
+    background-size: 22px 22px;
+    mask-image: linear-gradient(180deg, #000, transparent 70%);
+  }
+  @keyframes drift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(3%,-3%) scale(1.06); } }
+
+  .side > * { position: relative; z-index: 1; }
+
+  /* brand row */
+  .brand { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 8px; margin-bottom: 20px; }
+  .brand .word { height: 26px; width: auto; transition: opacity .2s ease; }
+  .brand .mark { height: 30px; width: 30px; border-radius: 8px; display: none; }
+  .side.collapsed .brand { justify-content: center; padding: 0; }
+  .side.collapsed .brand .word { display: none; }
+  .side.collapsed .brand .mark { display: block; }
+  .toggle {
+    width: 30px; height: 30px; flex: none; display: grid; place-items: center;
+    border: none; border-radius: 8px; cursor: pointer;
+    background: rgba(255,255,255,.12); color: #fff;
+    transition: background .18s ease, transform .34s cubic-bezier(.4,0,.2,1);
+  }
+  .toggle:hover { background: rgba(255,255,255,.22); }
+  .side.collapsed .toggle { transform: rotate(180deg); }
+  .side.collapsed .toggle { position: absolute; top: 20px; right: 10px; }
+
+  /* nav */
+  .nav { position: relative; flex: 1; display: flex; flex-direction: column; gap: 2px; overflow: visible; }
+  .sec { padding: 16px 12px 6px; }
+  .sec .lbl { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: rgba(255,255,255,.55); white-space: nowrap; transition: opacity .2s ease; }
+  .side.collapsed .sec { padding: 14px 0 4px; }
+  .side.collapsed .sec .lbl { opacity: 0; }
+  .side.collapsed .sec { height: 14px; }
+
+  /* the gliding frosted active pill */
+  .pill {
+    position: absolute; left: 6px; right: 6px; z-index: 0;
+    height: 44px; border-radius: 12px;
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.28);
+    box-shadow: 0 6px 18px rgba(16,42,41,.22), inset 0 1px 0 rgba(255,255,255,.3);
+    backdrop-filter: blur(6px);
+    transition: top .38s cubic-bezier(.34,1.2,.4,1), height .38s cubic-bezier(.34,1.2,.4,1), opacity .2s ease;
+    pointer-events: none;
+  }
+
+  .item {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 13px;
+    height: 44px; padding: 0 12px; border-radius: 12px;
+    border: none; background: none; cursor: pointer; width: 100%; text-align: left;
+    color: rgba(255,255,255,.82);
+    transition: color .2s ease, background .2s ease;
+    white-space: nowrap;
+  }
+  .item:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .item.active { color: #fff; }
+  .item svg { width: 20px; height: 20px; flex: none; transition: transform .3s cubic-bezier(.34,1.4,.4,1); }
+  .item.active svg { transform: scale(1.08); }
+  .item .txt { font-size: 0.92rem; font-weight: 500; transition: opacity .18s ease; }
+  .side.collapsed .item { justify-content: center; padding: 0; }
+  .side.collapsed .item .txt { opacity: 0; width: 0; overflow: hidden; }
+
+  /* user footer */
+  .foot { margin-top: 12px; padding: 12px 8px 4px; border-top: 1px solid rgba(255,255,255,.16); display: flex; align-items: center; gap: 11px; }
+  .avatar { width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center; font-size: 0.78rem; font-weight: 700; color: #fff; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); }
+  .who { min-width: 0; flex: 1; transition: opacity .18s ease; }
+  .who .n { font-size: 0.86rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .who .r { font-size: 0.74rem; color: rgba(255,255,255,.6); }
+  .logout { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border: none; background: none; border-radius: 8px; color: rgba(255,255,255,.7); cursor: pointer; transition: background .18s, color .18s; }
+  .logout:hover { background: rgba(255,255,255,.14); color: #fff; }
+  .side.collapsed .foot { justify-content: center; padding: 12px 0 4px; }
+  .side.collapsed .who, .side.collapsed .logout { display: none; }
+
+  /* ---------- mock content area (context) ---------- */
+  .content { flex: 1; min-width: 0; padding: 40px clamp(24px, 5vw, 72px); }
+  .content h1 { font-family: var(--sans); font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 300; letter-spacing: -0.02em; margin: 6px 0 20px; color: var(--ink); }
+  .ghost { max-width: 620px; }
+  .ghost .bar { height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 8%, transparent); margin-bottom: 12px; }
+  .ghost .bar:nth-child(2){ width: 88%; } .ghost .bar:nth-child(3){ width: 72%; } .ghost .bar:nth-child(4){ width: 80%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .side, .side::before, .toggle, .pill, .item, .item svg, .who, .brand .word { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side" id="side" aria-label="Primary navigation">
+      <div class="brand">
+        <img class="word" src="fostr-wordmark-white.png" alt="Fostr" />
+        <img class="mark" src="fostr-logo.svg" alt="Fostr" />
+        <button class="toggle" id="toggle" aria-label="Collapse sidebar" title="Collapse">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+      </div>
+
+      <nav class="nav" id="nav">
+        <div class="pill" id="pill" aria-hidden="true"></div>
+      </nav>
+
+      <div class="foot">
+        <div class="avatar">JH</div>
+        <div class="who"><div class="n">Jaden Hinton</div><div class="r">Caseworker</div></div>
+        <button class="logout" aria-label="Sign out" title="Sign out">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12H4"/><path d="M9 7l-5 5 5 5"/><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="content dotgrid">
+      <h1>Fieldbook</h1>
+      <div class="ghost"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+    </main>
+  </div>
+
+  <script>
+    var ic = {
+      dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+      fieldbook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 3.5a2.1 2.1 0 0 1 3 3L9 16l-4 1 1-4z"/><path d="M5 20h14"/></svg>',
+      review: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 12l2.2 2.2L15 10"/></svg>',
+      search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>',
+      verify: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/><path d="M9.5 12l1.8 1.8L15 10"/></svg>',
+      reporting: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+      exports: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>',
+    };
+    (function () {
+      var SECTIONS = [
+        { label: "Daily work", items: [["dashboard", "Dashboard", ic.dashboard]] },
+        { label: "Case work", items: [["fieldbook","Fieldbook", ic.fieldbook],["review","Review queue", ic.review],["search","Search case history", ic.search]] },
+        { label: "Court-ready", items: [["verify","Verify a seal", ic.verify]] },
+        { label: "Reports", items: [["reporting","Reporting", ic.reporting],["exports","Exports", ic.exports]] },
+      ];
+      var nav = document.getElementById("nav");
+      var pill = document.getElementById("pill");
+      var side = document.getElementById("side");
+      var active = null;
+
+      SECTIONS.forEach(function (s) {
+        var sec = document.createElement("div"); sec.className = "sec";
+        sec.innerHTML = '<span class="lbl">' + s.label + '</span>';
+        nav.appendChild(sec);
+        s.items.forEach(function (it) {
+          var b = document.createElement("button");
+          b.className = "item"; b.type = "button"; b.title = it[1];
+          b.innerHTML = it[2] + '<span class="txt">' + it[1] + '</span>';
+          b.addEventListener("click", function () { select(b); });
+          nav.appendChild(b);
+          if (it[0] === "fieldbook") active = b;
+        });
+      });
+
+      function movePill(el) {
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        pill.style.opacity = "1";
+        pill.style.height = el.offsetHeight + "px";
+        pill.style.top = el.offsetTop + "px";
+        if (reduce) { pill.style.transition = "none"; }
+      }
+      function select(el) {
+        if (active) active.classList.remove("active"), active.removeAttribute("aria-current");
+        active = el; el.classList.add("active"); el.setAttribute("aria-current", "page");
+        movePill(el);
+      }
+
+      // init
+      requestAnimationFrame(function(){ select(active); });
+      document.getElementById("toggle").addEventListener("click", function () {
+        side.classList.toggle("collapsed");
+        this.setAttribute("aria-label", side.classList.contains("collapsed") ? "Expand sidebar" : "Collapse sidebar");
+        // reposition pill after width transition settles
+        setTimeout(function(){ if (active) movePill(active); }, 360);
+      });
+      window.addEventListener("resize", function(){ if (active) movePill(active); });
+    })();
+  </script>
+</body>
+</html>

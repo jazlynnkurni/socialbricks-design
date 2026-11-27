@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr Fieldbook — the wall (Scratch → promote → sign → filed)</title>
+<style>
+  :root{
+    --teal:#5DA1A1; --teal-deep:#2F6B6B; --gold:#E4BE79; --ink:#1A2323; --muted:#4A5A5A; --faint:#8a938f;
+    --paper:#F5F8F8; --surface:#fff; --border:#DCE4E4;
+    --candid:#efe9df; --candid-line:#e0d6c4; --candid-ink:#6b5f49;
+    --over:#C0632F; --ok:#2F6B6B; --done:#137333;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --head:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(120% 80% at 50% 0%, #eef5f4, #e3edec 60%, #dae5e3);
+    font-family:var(--sans);color:var(--ink);display:grid;place-items:center;min-height:100%;padding:22px;-webkit-font-smoothing:antialiased}
+  .phone{position:relative;width:392px;height:812px;max-height:94vh;border-radius:52px;overflow:hidden;background:var(--paper);
+    box-shadow:0 40px 120px rgba(26,35,35,.32), inset 0 0 0 10px #0e1413, inset 0 0 0 12px #2a3230}
+  .notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:110px;height:28px;background:#0e1413;border-radius:20px;z-index:30}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:15px 30px 0;font-size:12px;font-weight:600}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--paper);transition:transform .34s cubic-bezier(.22,1,.36,1)}
+  #note{transform:translateX(100%);z-index:6}
+  #note.on{transform:none}
+  .body{flex:1;overflow:auto;padding:0 18px 12px}
+  .hd{padding:12px 20px 4px}
+  .hd h1{font-family:var(--head);font-size:1.55rem;font-weight:800;letter-spacing:-.02em;margin:0}
+  .sub{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .counter{font-family:var(--mono);font-size:.72rem;color:var(--faint);margin-top:6px}
+
+  /* today rows */
+  .rowlist{padding:8px 18px 0;display:flex;flex-direction:column;gap:9px}
+  .visit{background:#fff;border:1px solid var(--border);border-radius:16px;padding:13px 15px;cursor:pointer;box-shadow:0 3px 10px rgba(26,35,35,.05);transition:border-color .15s}
+  .visit:hover{border-color:var(--teal)}
+  .visit .who{font-weight:600;font-size:.98rem}
+  .visit .meta{font-size:.77rem;color:var(--muted);margin-top:2px}
+  .stat{font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--border);color:var(--muted)}
+  .stat.notstarted{color:var(--over);border-color:#e0b7a2;background:#fbf0ea}
+  .stat.filed{color:var(--done);border-color:#b7d8c0;background:#eaf6ee}
+  .stat.staged{color:var(--gold);border-color:#e6d3a8;background:#fbf5e8}
+  .talk{position:absolute;left:50%;transform:translateX(-50%);bottom:26px;z-index:8;display:flex;align-items:center;gap:9px;
+    height:54px;padding:0 26px;border-radius:99px;background:var(--teal-deep);color:#fff;font-weight:600;border:0;cursor:pointer;
+    box-shadow:0 12px 30px rgba(47,107,107,.34)}
+
+  /* note screen */
+  .back{display:inline-flex;align-items:center;gap:5px;background:none;border:0;color:var(--teal-deep);font-weight:600;font-size:.9rem;cursor:pointer;padding:8px 2px 2px}
+  .chiprow{display:flex;flex-wrap:wrap;gap:6px;margin:6px 2px 4px}
+  .rchip{font-size:.72rem;font-weight:500;padding:4px 10px;border-radius:99px;background:var(--teal-100,#e3efee);color:var(--teal-deep);border:1px solid #cfe3e2}
+  .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:16px 2px 7px;display:flex;align-items:center;gap:8px}
+  .lbl .tag{font-size:9px;padding:1px 7px;border-radius:99px;border:1px solid currentColor}
+
+  /* panels — the wall */
+  .panel{border-radius:16px;padding:12px 13px;margin-bottom:4px}
+  .scratch{background:var(--candid);border:1px dashed var(--candid-line)}
+  .signable{background:#fff;border:1px solid var(--border);box-shadow:0 3px 10px rgba(26,35,35,.05)}
+  .wall{height:1px;background:repeating-linear-gradient(90deg,var(--border) 0 6px,transparent 6px 12px);margin:14px 4px}
+
+  .seg{background:#fff;border:1px solid var(--candid-line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+  .seg.candid-only{background:#fbf8f2}
+  .seg .txt{font-size:.9rem;line-height:1.35}
+  .seg .route{font-size:.68rem;color:var(--candid-ink);margin-top:5px}
+  .seg .acts{display:flex;gap:8px;margin-top:9px}
+  .seg .acts button{flex:1;font-family:var(--sans);font-size:.78rem;font-weight:600;padding:7px 8px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:#fff}
+  .seg .promote{background:var(--teal-deep);color:#fff;border-color:var(--teal-deep)}
+  .seg .leave{color:var(--muted)}
+  .seg.left{opacity:.5}
+  .seg.left .txt{text-decoration:line-through;text-decoration-color:#c9b79a}
+  .seg.done{opacity:.5}
+
+  .note-grp{margin-bottom:10px}
+  .note-grp h4{font-family:var(--head);font-size:.82rem;font-weight:700;margin:0 0 5px}
+  .note-line{font-size:.9rem;line-height:1.4;padding:6px 0;border-bottom:1px dashed var(--border);display:flex;gap:8px;align-items:flex-start}
+  .note-line .prov{font-size:.6rem;font-weight:600;padding:1px 6px;border-radius:99px;flex:none;margin-top:2px}
+  .prov.record{color:var(--teal-deep);background:#e3efee;border:1px solid #cfe3e2}
+  .prov.said{color:#8a5a12;background:#fbf5e8;border:1px solid #e6d3a8}
+  .empty{color:var(--faint);font-size:.82rem;font-style:italic;padding:4px 0}
+
+  /* locked quote */
+  .quote{background:#fff;border:1px solid var(--gold);border-left:4px solid var(--gold);border-radius:12px;padding:11px 13px}
+  .quote .q{font-size:.96rem;line-height:1.35;font-style:italic}
+  .quote .meta{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .play{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:#8a5a12;background:#fbf5e8;border:1px solid #e6d3a8;border-radius:99px;padding:3px 9px;cursor:pointer}
+  .cand{border:1px dashed var(--candid-line);background:var(--candid);border-radius:12px;padding:11px 13px;cursor:pointer}
+  .cand .q{font-size:.92rem}
+  .wordpick{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .w{font-size:.86rem;padding:3px 6px;border-radius:6px;cursor:pointer;border:1px solid transparent}
+  .w.sel{background:#fbf5e8;border-color:#e6d3a8}
+  .mini{font-family:var(--sans);font-size:.76rem;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;border:1px solid var(--border);background:#fff;margin-top:9px}
+  .mini.gold{background:var(--gold);border-color:var(--gold);color:#5a3d0a}
+
+  /* sign bar + receipt */
+  .signbar{padding:11px 18px calc(18px + env(safe-area-inset-bottom));background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-top:1px solid var(--border)}
+  .signbtn{width:100%;height:50px;border-radius:14px;background:var(--teal-deep);color:#fff;font-family:var(--sans);font-weight:700;font-size:1rem;border:0;cursor:pointer;box-shadow:0 10px 26px rgba(47,107,107,.3)}
+  .signbtn[disabled]{background:#c3d0cf;box-shadow:none;cursor:default}
+  .signbtn.small{height:auto;padding:8px;font-size:.8rem;background:none;color:var(--muted);box-shadow:none;font-weight:600}
+
+  .receipt{position:absolute;inset:0;background:rgba(20,28,28,.42);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:20;padding:26px}
+  .receipt.on{display:flex}
+  .rcard{background:#fff;border-radius:22px;padding:22px 22px 18px;width:100%;box-shadow:0 30px 70px rgba(0,0,0,.3)}
+  .rcard h3{font-family:var(--head);font-size:1.15rem;margin:0 0 4px}
+  .rstep{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.9rem}
+  .rstep .k{width:20px;text-align:center}
+  .rstep.pending{opacity:.4}
+  .rstep .id{margin-left:auto;font-family:var(--mono);font-size:.76rem;color:var(--done)}
+  .rnote{font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.45}
+  .burnmark{font-family:var(--mono);font-size:.7rem;color:#a06a2a;margin-top:6px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+
+  <!-- ============ TODAY ============ -->
+  <div class="screen" id="today">
+    <div class="statusbar"><span>9:41</span><span>􀙇 􀫮 􀛨</span></div>
+    <div class="hd">
+      <h1>today</h1>
+      <div class="sub">the note is done at the curb.</div>
+      <div class="counter" id="counter">2 not started · 1 saved · 1 filed</div>
+    </div>
+    <div class="rowlist" id="rowlist"></div>
+    <button class="talk" onclick="openNote()">▮ hold to talk</button>
+  </div>
+
+  <!-- ============ NOTE (the contact event) ============ -->
+  <div class="screen" id="note">
+    <div class="statusbar"><span>9:41</span><span>􀙇 􀫮 􀛨</span></div>
+    <div class="body">
+      <button class="back" onclick="closeNote()">‹ today</button>
+      <div class="hd" style="padding-left:2px">
+        <h1 style="font-size:1.3rem">Ramirez · home visit</h1>
+        <div class="sub">Mateo (9) · Sofia (6) · 1442 Alder St</div>
+      </div>
+
+      <div class="chiprow" id="prefill">
+        <span class="rchip">Mateo Ramirez, 9 · from record</span>
+        <span class="rchip">Sofia Ramirez, 6 · from record</span>
+        <span class="rchip">non-relative foster · from record</span>
+        <span class="rchip">last visit Jul 2 · from record</span>
+      </div>
+
+      <!-- locked quotes -->
+      <div class="lbl">the kid's exact words <span class="tag" style="color:#8a5a12">locked = evidence</span></div>
+      <div id="quotebox"></div>
+
+      <!-- the wall -->
+      <div class="lbl">scratch <span class="tag" style="color:var(--candid-ink)">candid · never leaves the phone · burns when you file</span></div>
+      <div class="panel scratch" id="scratchPanel">
+        <div class="empty" id="scratchEmpty">tap <b>hold to talk</b> below — narrate the room like the group text. review turns your words into the note.</div>
+        <div id="scratchList"></div>
+      </div>
+
+      <div class="wall"></div>
+
+      <div class="lbl">the note <span class="tag" style="color:var(--teal-deep)">you sign this · only lines you promoted</span></div>
+      <div class="panel signable" id="notePanel"></div>
+
+      <button class="signbtn small" id="restage" onclick="toggleDoor()">county write-back: <b id="doorlabel">on</b> — tap to simulate no door</button>
+    </div>
+    <div class="signbar">
+      <button class="signbtn" id="signbtn" onclick="signFile()" disabled>review a line to sign</button>
+      <div style="text-align:center;margin-top:7px"><button class="signbtn small" onclick="talkMore()" id="talkmore">▮ hold to talk</button></div>
+    </div>
+  </div>
+
+  <!-- receipt -->
+  <div class="receipt" id="receipt">
+    <div class="rcard">
+      <h3 id="rtitle">saved.</h3>
+      <div class="burnmark" id="burnmark">scratch burned — your driveway read is gone.</div>
+      <div style="margin-top:12px">
+        <div class="rstep" id="s-saved"><span class="k">✓</span> saved <span style="color:var(--faint);font-size:.76rem;margin-left:auto">on disk · survives a dead battery</span></div>
+        <div class="rstep pending" id="s-synced"><span class="k">◦</span> synced <span style="color:var(--faint);font-size:.76rem;margin-left:auto">left the phone</span></div>
+        <div class="rstep pending" id="s-filed"><span class="k">◦</span> <span id="filedword">filed</span> <span class="id" id="filedid"></span></div>
+      </div>
+      <div class="rnote" id="rnote"></div>
+      <button class="signbtn small" style="margin-top:8px" onclick="reset()">‹ back to today</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- data ----
+  var VISITS = [
+    {id:'ramirez', who:'Mateo & Sofia Ramirez', meta:'home visit · 1442 Alder St · due today', stat:'notstarted', statTxt:'not started'},
+    {id:'brooks', who:'Destiny Brooks', meta:'home visit · due today', stat:'notstarted', statTxt:'not started'},
+    {id:'okafor', who:'Devin Okafor', meta:'drug-screen collateral · saved, queued', stat:'', statTxt:'saved'},
+    {id:'nguyen', who:'Aaliyah Nguyen', meta:'home visit · CN-2026-07-4471', stat:'filed', statTxt:'filed'},
+  ];
+  var rowlist = document.getElementById('rowlist');
+  VISITS.forEach(function(v){
+    var d=document.createElement('div'); d.className='visit';
+    d.innerHTML='<div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div class="who">'+v.who+'</div><div class="meta">'+v.meta+'</div></div><span class="stat '+v.stat+'">'+v.statTxt+'</span></div>';
+    if(v.id==='ramirez') d.onclick=openNote; else d.onclick=function(){};
+    rowlist.appendChild(d);
+  });
+
+  // ---- scratch script: what she narrated in the Corolla ----
+  var SCRATCH = [
+    {id:1, text:"home was clean, fridge stocked, both kids seemed settled", route:"→ home condition", kind:"promotable",
+     promoted:"Home clean, fridge stocked; both children appeared settled.", grp:"Home"},
+    {id:2, text:"Mateo wouldn't get off the tablet — foster mom tired but patient with him", route:"→ Mateo", kind:"promotable",
+     promoted:"Mateo reluctant to disengage from tablet; caregiver patient and calm.", grp:"Mateo"},
+    {id:3, text:"the boyfriend gives me a bad feeling, didn't like how he watched me", route:"— candid · your read", kind:"candid"},
+    {id:4, text:"boyfriend was present, declined to give his last name, left when I asked about the bruise on Mateo's arm", route:"→ safety / caregiver", kind:"promotable",
+     promoted:"Mother's boyfriend present; declined to give last name; left when I asked about a bruise on Mateo's arm.", grp:"Safety"},
+    {id:5, text:"mom's affect was flat, honestly couldn't read her", route:"— candid · your read", kind:"candid"},
+  ];
+  var scratchList = document.getElementById('scratchList');
+  var promotedLines = [];   // {grp, text}
+  var lockedQuote = null;
+  var reviewed = 0;
+
+  function renderScratch(){
+    document.getElementById('scratchEmpty').style.display = SCRATCH.length? 'none':'block';
+    scratchList.innerHTML='';
+    SCRATCH.forEach(function(s){
+      var el=document.createElement('div'); el.className='seg'+(s.kind==='candid'?' candid-only':'')+(s.state?(' '+s.state):'');
+      var actions = s.state ? '<div class="route">'+(s.state==='done'?'✓ promoted into the note':'✕ left in scratch — will burn')+'</div>'
+        : '<div class="route">'+s.route+'</div><div class="acts">'+
+          (s.kind==='promotable'?'<button class="promote" onclick="promote('+s.id+')">promote →</button>':'')+
+          '<button class="leave" onclick="leaveSeg('+s.id+')">leave (burns)</button></div>';
+      el.innerHTML='<div class="txt">'+s.text+'</div>'+actions;
+      scratchList.appendChild(el);
+    });
+  }
+  window.promote=function(id){ var s=SCRATCH.find(function(x){return x.id===id;}); if(!s||s.state)return;
+    s.state='done'; promotedLines.push({grp:s.grp, text:s.promoted}); reviewed++; renderScratch(); renderNote(); updateSign();
+  };
+  window.leaveSeg=function(id){ var s=SCRATCH.find(function(x){return x.id===id;}); if(!s||s.state)return;
+    s.state='left'; reviewed++; renderScratch(); updateSign();
+  };
+
+  // ---- note (signable) ----
+  function renderNote(){
+    var p=document.getElementById('notePanel');
+    var groups={ 'Home':[], 'Mateo':[], 'Sofia':[], 'Safety':[] };
+    promotedLines.forEach(function(l){ (groups[l.grp]=groups[l.grp]||[]).push(l.text); });
+    var html='';
+    // pre-fill always present
+    html+='<div class="note-grp"><h4>from the record</h4><div class="note-line"><span class="prov record">record</span><span>Non-relative foster placement · 1442 Alder St · last visit Jul 2.</span></div></div>';
+    ['Home','Mateo','Sofia','Safety'].forEach(function(g){
+      var lines=groups[g]||[]; var isSofiaQuote = (g==='Sofia' && lockedQuote);
+      if(!lines.length && !isSofiaQuote) return;
+      html+='<div class="note-grp"><h4>'+g+'</h4>';
+      lines.forEach(function(t){ html+='<div class="note-line"><span class="prov said">you said</span><span>'+t+'</span></div>'; });
+      if(isSofiaQuote) html+='<div class="note-line"><span class="prov said">you said · locked</span><span><i>"'+lockedQuote+'"</i></span></div>';
+      html+='</div>';
+    });
+    if(!promotedLines.length && !lockedQuote) html='<div class="empty">nothing promoted yet. review a scratch line, or lock a quote — the note fills only with what you choose.</div>'+html;
+    p.innerHTML=html;
+  }
+
+  // ---- locked quote flow ----
+  var QUOTE_WORDS = ["my","stomach","hurts","and","I","don't","want","to","go","to","Dad's","this","weekend"];
+  function renderQuote(){
+    var box=document.getElementById('quotebox');
+    if(lockedQuote){
+      box.innerHTML='<div class="quote"><div class="q">"'+lockedQuote+'"</div><div class="meta"><span class="play" onclick="playQuote()">▶ you said · play</span><span style="font-size:.7rem;color:var(--faint)">Sofia · locked · survives the burn</span></div></div>';
+      return;
+    }
+    var picked={};
+    box.innerHTML='<div class="cand" id="candbox"><div style="font-size:.68rem;color:var(--candid-ink)">Sofia, at the door — tap her exact words, then lock them as evidence:</div>'+
+      '<div class="wordpick" id="wp"></div><button class="mini gold" onclick="doLock()">🔒 lock quote</button>'+
+      '<div style="font-size:.68rem;color:var(--faint);margin-top:6px">a deciding word you can\'t make out stays <b>[unclear]</b> — never guessed.</div></div>';
+    var wp=document.getElementById('wp');
+    QUOTE_WORDS.forEach(function(w,i){ var s=document.createElement('span'); s.className='w'; s.textContent=w;
+      s.onclick=function(){ picked[i]=!picked[i]; s.classList.toggle('sel'); window.__picked=picked; }; wp.appendChild(s); });
+    window.__picked=picked;
+  }
+  window.doLock=function(){
+    var picked=window.__picked||{}; var sel=QUOTE_WORDS.filter(function(_,i){return picked[i];});
+    lockedQuote = sel.length? sel.join(' ') : QUOTE_WORDS.join(' ');
+    renderQuote(); renderNote();
+  };
+
+  window.playQuote=function(){ alert('▶ plays the actual audio — 4 seconds'); };
+
+  // ---- door / staged toggle ----
+  var doorOpen=true;
+  window.toggleDoor=function(){ doorOpen=!doorOpen; document.getElementById('doorlabel').textContent=doorOpen?'on':'off'; };
+
+  // ---- sign & file ----
+  function updateSign(){
+    var b=document.getElementById('signbtn');
+    var ready = reviewed>0 || lockedQuote;
+    b.disabled=!ready;
+    b.textContent = ready ? 'sign & file' : 'review a line to sign';
+  }
+  window.signFile=function(){
+    // burn the scratch panel
+    var sp=document.getElementById('scratchPanel'); sp.style.transition='opacity .6s, filter .6s'; sp.style.opacity='.25'; sp.style.filter='grayscale(1) blur(1px)';
+    var r=document.getElementById('receipt'); r.classList.add('on');
+    document.getElementById('s-synced').classList.add('pending');
+    document.getElementById('s-filed').classList.add('pending');
+    document.getElementById('filedid').textContent='';
+    var burnedCount = SCRATCH.filter(function(s){return s.kind==='candid'||s.state==='left';}).length;
+    document.getElementById('burnmark').textContent='scratch burned — '+burnedCount+' candid line'+(burnedCount!==1?'s':'')+' gone, including your driveway read.';
+    setTimeout(function(){ // synced
+      var s=document.getElementById('s-synced'); s.classList.remove('pending'); s.querySelector('.k').textContent='✓';
+    }, 1400);
+    setTimeout(function(){ // filed or staged
+      var f=document.getElementById('s-filed'); f.classList.remove('pending'); f.querySelector('.k').textContent = doorOpen?'✓':'◐';
+      if(doorOpen){
+        document.getElementById('filedword').textContent='filed';
+        document.getElementById('filedid').textContent='CN-2026-08-0112';
+        document.getElementById('rnote').textContent='filed means the county system returned its own id. you will not be dinged for late documentation on a note we claimed had landed.';
+      } else {
+        document.getElementById('filedword').innerHTML='<b style="color:var(--gold)">staged</b>';
+        document.getElementById('filedid').textContent='';
+        document.getElementById('rnote').textContent='this county has no write-back door yet. the note is staged and durable — but you are still on the hook to key it into the county system. we told you before the field day, and we did not fake "filed".';
+      }
+    }, 3000);
+  };
+
+  // ---- navigation ----
+  var talked=false;
+  window.openNote=function(){ document.getElementById('note').classList.add('on'); };
+  window.closeNote=function(){ document.getElementById('note').classList.remove('on'); };
+  window.talkMore=function(){ if(talked) return; talked=true; renderScratch(); document.getElementById('talkmore').textContent='▮ narrated — now review below'; };
+  window.reset=function(){ location.reload(); };
+
+  // init
+  renderQuote(); renderNote(); updateSign();
+  // the Today "hold to talk" opens the note AND drops the narration in
+  document.querySelector('.talk').onclick=function(){ openNote(); setTimeout(talkMore, 350); };
+})();
+</script>
+</body>
+</html>

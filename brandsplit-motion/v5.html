@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sign in — Fostr</title>
+<link rel="stylesheet" href="tokens.css" />
+<link rel="stylesheet" href="split.css" />
+<style>
+  /* ============================================================
+     >>> MOTION CSS ONLY — "Breathing Contours"
+     Animated topographic contour lines / concentric ripple rings
+     that slowly warp, expand and contract behind the wordmark.
+     Low-contrast whites/teals; wordmark + line stay legible.
+     Freeze to one static frame under reduced-motion.
+     ============================================================ */
+  .brand .motion { z-index: 0; }
+  .brand .motion__canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  /* Soft vignette so the contours settle into the panel edges and
+     the text region reads calm. Sits above canvas, below text. */
+  .brand .motion::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 24% 34%,
+        transparent 0%,
+        color-mix(in srgb, var(--teal-deep) 22%, transparent) 78%,
+        color-mix(in srgb, var(--teal-deep) 42%, transparent) 100%);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <main class="shell">
+    <section class="brand">
+      <div class="motion" aria-hidden="true">
+        <!-- >>> MOTION MARKUP: single canvas contour field <<< -->
+        <canvas class="motion__canvas"></canvas>
+      </div>
+      <div class="brand__top"><img src="fostr-wordmark-white.png" alt="Fostr" /></div>
+      <div class="brand__body">
+        <p class="brand__line">The paperwork stays here, so more of your day can reach a kid.</p>
+        <p class="brand__sub">Your notes, your visits, your record — kept in one place that holds up when it matters.</p>
+      </div>
+    </section>
+
+    <section class="signin">
+      <div class="formWrap">
+        <div class="signinBrand"><img src="fostr-wordmark-black.png" alt="Fostr" /></div>
+        <h1>Sign in</h1>
+        <p class="hint">Use the account your agency set up for you.</p>
+        <form id="loginForm" class="stack" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="j.rivera" />
+          </div>
+          <div class="field">
+            <div class="labelRow">
+              <label for="password">Password</label>
+              <a class="link" href="#" id="forgot">Forgot password?</a>
+            </div>
+            <div class="pwWrap">
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
+              <button type="button" class="pwToggle" id="pwToggle" aria-pressed="false" aria-controls="password">Show</button>
+            </div>
+          </div>
+          <label class="remember" for="remember">
+            <input type="checkbox" id="remember" name="remember" checked />
+            <span>Keep me signed in</span>
+          </label>
+          <button type="submit" class="btn-primary" id="submitBtn">
+            <span class="spin" aria-hidden="true"></span><span id="submitLabel">Sign in</span>
+          </button>
+          <div class="or">or</div>
+          <button type="button" class="btn-ghost" id="ssoBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.8" />
+              <path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            Sign in with agency SSO
+          </button>
+        </form>
+        <p class="support">Trouble signing in? Ask your agency admin.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="split.js"></script>
+  <script>
+    /* ============================================================
+       >>> MOTION SCRIPT — "Breathing Contours" (self-contained)
+       A slow scalar field built from a few drifting sources is
+       contoured with marching squares each frame, so nested
+       topographic lines flow, warp, and breathe like ripples on
+       still water. Single rAF, ~34fps cap, paused when hidden or
+       off-screen. Reduced-motion → one static frame, no loop.
+       ============================================================ */
+    (function () {
+      var canvas = document.querySelector('.brand .motion__canvas');
+      if (!canvas || !canvas.getContext) return;
+      var ctx = canvas.getContext('2d');
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var W = 0, H = 0;            // CSS px
+      var cols = 0, rows = 0;      // grid dims
+      var cell = 22;               // grid cell size in CSS px
+      var gx = null, gy = null;    // grid coord caches
+      var field = null;            // Float32Array of field values
+
+      // Drifting sources shaping the terrain (normalized 0..1 space).
+      var sources = [
+        { bx: 0.24, by: 0.30, ax: 0.10, ay: 0.08, sx: 0.34, sy: 0.29, ph: 0.0, amp: 1.00, sig: 0.42 },
+        { bx: 0.74, by: 0.22, ax: 0.09, ay: 0.10, sx: 0.27, sy: 0.38, ph: 1.7, amp: 0.85, sig: 0.36 },
+        { bx: 0.62, by: 0.78, ax: 0.11, ay: 0.09, sx: 0.31, sy: 0.24, ph: 3.1, amp: 0.95, sig: 0.40 },
+        { bx: 0.16, by: 0.82, ax: 0.08, ay: 0.10, sx: 0.23, sy: 0.33, ph: 4.6, amp: 0.70, sig: 0.34 },
+        { bx: 0.90, by: 0.58, ax: 0.10, ay: 0.08, sx: 0.36, sy: 0.28, ph: 5.9, amp: -0.55, sig: 0.30 }
+      ];
+
+      var LEVELS = 13;             // number of iso-contour lines
+
+      function resize() {
+        var r = canvas.getBoundingClientRect();
+        W = Math.max(1, r.width);
+        H = Math.max(1, r.height);
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        cols = Math.max(2, Math.ceil(W / cell) + 1);
+        rows = Math.max(2, Math.ceil(H / cell) + 1);
+        gx = new Float32Array(cols);
+        gy = new Float32Array(rows);
+        for (var i = 0; i < cols; i++) gx[i] = (i / (cols - 1)) * W;
+        for (var j = 0; j < rows; j++) gy[j] = (j / (rows - 1)) * H;
+        field = new Float32Array(cols * rows);
+      }
+
+      function computeField(t) {
+        // Precompute live source positions (in px).
+        var n = sources.length;
+        var cx = new Float32Array(n), cy = new Float32Array(n);
+        var amp = new Float32Array(n), inv2s2 = new Float32Array(n);
+        var minDim = Math.min(W, H);
+        for (var s = 0; s < n; s++) {
+          var o = sources[s];
+          cx[s] = (o.bx + o.ax * Math.sin(t * o.sx + o.ph)) * W;
+          cy[s] = (o.by + o.ay * Math.cos(t * o.sy + o.ph * 1.3)) * H;
+          amp[s] = o.amp;
+          var sig = o.sig * minDim;
+          inv2s2[s] = 1 / (2 * sig * sig);
+        }
+        var idx = 0;
+        for (var j = 0; j < rows; j++) {
+          var y = gy[j];
+          for (var i = 0; i < cols; i++) {
+            var x = gx[i];
+            var v = 0.18 * (1 - y / H); // gentle vertical drift so lines span the panel
+            for (var s2 = 0; s2 < n; s2++) {
+              var dx = x - cx[s2], dy = y - cy[s2];
+              v += amp[s2] * Math.exp(-(dx * dx + dy * dy) * inv2s2[s2]);
+            }
+            field[idx++] = v;
+          }
+        }
+      }
+
+      // Marching squares for one iso level; interpolated segments.
+      function contour(level) {
+        ctx.beginPath();
+        for (var j = 0; j < rows - 1; j++) {
+          var row0 = j * cols, row1 = row0 + cols;
+          for (var i = 0; i < cols - 1; i++) {
+            var a = field[row0 + i];       // top-left
+            var b = field[row0 + i + 1];   // top-right
+            var c = field[row1 + i + 1];   // bottom-right
+            var d = field[row1 + i];       // bottom-left
+            var ci = (a > level ? 8 : 0) | (b > level ? 4 : 0) | (c > level ? 2 : 0) | (d > level ? 1 : 0);
+            if (ci === 0 || ci === 15) continue;
+
+            var x0 = gx[i], x1 = gx[i + 1], y0 = gy[j], y1 = gy[j + 1];
+            // edge interpolation points (linear along each straddled edge)
+            var tt;
+            var tx, ty, rx, ry, bx, by, lx, ly;
+            // top edge (a-b)
+            tt = (level - a) / (b - a); tx = x0 + (x1 - x0) * tt; ty = y0;
+            // right edge (b-c)
+            tt = (level - b) / (c - b); rx = x1; ry = y0 + (y1 - y0) * tt;
+            // bottom edge (d-c)
+            tt = (level - d) / (c - d); bx = x0 + (x1 - x0) * tt; by = y1;
+            // left edge (a-d)
+            tt = (level - a) / (d - a); lx = x0; ly = y0 + (y1 - y0) * tt;
+
+            switch (ci) {
+              case 1: case 14: ctx.moveTo(lx, ly); ctx.lineTo(bx, by); break;
+              case 2: case 13: ctx.moveTo(bx, by); ctx.lineTo(rx, ry); break;
+              case 3: case 12: ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); break;
+              case 4: case 11: ctx.moveTo(tx, ty); ctx.lineTo(rx, ry); break;
+              case 5: ctx.moveTo(lx, ly); ctx.lineTo(tx, ty); ctx.moveTo(bx, by); ctx.lineTo(rx, ry); break;
+              case 6: case 9: ctx.moveTo(tx, ty); ctx.lineTo(bx, by); break;
+              case 7: case 8: ctx.moveTo(lx, ly); ctx.lineTo(tx, ty); break;
+              case 10: ctx.moveTo(tx, ty); ctx.lineTo(rx, ry); ctx.moveTo(lx, ly); ctx.lineTo(bx, by); break;
+            }
+          }
+        }
+        ctx.stroke();
+      }
+
+      function draw(t) {
+        computeField(t);
+        ctx.clearRect(0, 0, W, H);
+
+        // Breathing offset shifts every iso level together, so the whole
+        // ring field expands and contracts like a slow tide.
+        var breathe = 0.055 * Math.sin(t * 0.42);
+        var lo = -0.15, hi = 1.05;
+        var step = (hi - lo) / (LEVELS + 1);
+
+        for (var k = 1; k <= LEVELS; k++) {
+          var level = lo + k * step + breathe;
+          // Index contours (every 4th) a touch brighter/whiter, like a real
+          // topographic map; the rest are soft teal-white hairlines.
+          var isIndex = (k % 4 === 0);
+          if (isIndex) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+            ctx.lineWidth = 1.4;
+          } else {
+            ctx.strokeStyle = 'rgba(214,238,236,0.085)';
+            ctx.lineWidth = 1.0;
+          }
+          contour(level);
+        }
+      }
+
+      // ---- loop control -------------------------------------------------
+      var running = false, rafId = 0, last = 0, start = 0;
+      var FRAME = 1000 / 34; // ~34fps cap
+
+      function frame(now) {
+        if (!running) return;
+        rafId = requestAnimationFrame(frame);
+        if (now - last < FRAME) return;
+        last = now;
+        var t = (now - start) / 1000;
+        draw(t);
+      }
+
+      function play() {
+        if (running || reduce) return;
+        running = true;
+        if (!start) start = performance.now();
+        last = 0;
+        rafId = requestAnimationFrame(frame);
+      }
+      function pause() {
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+
+      function staticFrame() {
+        draw(6.0); // one settled, pleasant frame
+      }
+
+      // Resize handling.
+      var ro = new ResizeObserver(function () {
+        resize();
+        if (reduce || !running) staticFrame();
+      });
+      ro.observe(canvas);
+      resize();
+
+      if (reduce) {
+        staticFrame();
+        return;
+      }
+
+      // Pause when tab hidden.
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) pause(); else play();
+      });
+
+      // Pause when the panel scrolls off-screen (mobile stacked layout).
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          var vis = entries[0] && entries[0].isIntersecting;
+          if (vis && !document.hidden) play(); else pause();
+        }, { threshold: 0.01 });
+        io.observe(canvas);
+      } else {
+        play();
+      }
+      play();
+    })();
+  </script>
+</body>
+</html>

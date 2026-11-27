@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fostr — youth toolbox (orb + bento)</title>
+<style>
+  :root{
+    --teal:#5DA1A1; --teal-deep:#2F6B6B; --teal-100:#e3efee; --gold:#E4BE79; --gold-deep:#B4802E;
+    --ink:#1A2323; --muted:#4A5A5A; --faint:#8a938f;
+    --paper:#F4F7F7; --surface:#fff; --border:#DCE4E4;
+    --todo:#B4802E; --todo-bg:#fbf5e8; --todo-line:#e6d3a8;
+    --done:#137333; --prog:#2F6B6B;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --head:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:radial-gradient(120% 80% at 50% 0%, #e9f3f1, #dfe9e7 60%, #d5e0de);
+    font-family:var(--sans);color:var(--ink);display:grid;place-items:center;min-height:100%;padding:20px;-webkit-font-smoothing:antialiased}
+  .phone{position:relative;width:392px;height:812px;max-height:94vh;border-radius:52px;overflow:hidden;background:var(--paper);
+    box-shadow:0 40px 120px rgba(26,35,35,.32), inset 0 0 0 10px #0e1413, inset 0 0 0 12px #2a3230}
+  .notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:110px;height:28px;background:#0e1413;border-radius:20px;z-index:40}
+  .statusbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:15px 30px 0;font-size:12px;font-weight:600;z-index:20}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--paper);transform:translateX(100%);transition:transform .34s cubic-bezier(.22,1,.36,1);z-index:6}
+  .screen.base{transform:none;z-index:1}
+  .screen.on{transform:none;z-index:7}
+  .body{flex:1;overflow:auto;padding:56px 18px 20px}
+  .body::-webkit-scrollbar{width:0}
+
+  /* ---- orb ---- */
+  .orbwrap{display:flex;flex-direction:column;align-items:center;padding:4px 0 6px}
+  .orb{position:relative;width:168px;height:168px;cursor:pointer}
+  .orb svg{transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--border);stroke-width:7}
+  .ring-fg{fill:none;stroke:url(#g);stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.22,1,.36,1)}
+  .orbcenter{position:absolute;inset:14px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(120% 120% at 38% 30%,#fff,#eef5f4);box-shadow:inset 0 2px 10px rgba(255,255,255,.7), 0 10px 26px rgba(47,107,107,.14);text-align:center}
+  .orbcenter.empty{border:2px dashed var(--border);background:transparent;box-shadow:none}
+  .avatar{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--head);font-weight:700;font-size:1.3rem}
+  .oname{font-family:var(--head);font-weight:700;font-size:1.02rem;margin-top:6px;line-height:1.1}
+  .opct{font-family:var(--mono);font-size:.7rem;color:var(--teal-deep);margin-top:2px}
+  .oempty{color:var(--faint);font-size:.82rem;padding:0 24px}
+  .ohint{font-size:.68rem;color:var(--faint);margin-top:8px}
+
+  /* ---- youth strip ---- */
+  .striplbl{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:8px 4px 8px}
+  .strip{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory}
+  .strip::-webkit-scrollbar{height:0}
+  .ychip{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;width:64px;cursor:pointer;scroll-snap-align:start}
+  .ychip .av{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--head);font-weight:700;position:relative;transition:transform .15s;box-shadow:0 4px 12px rgba(26,35,35,.12)}
+  .ychip.sel .av{transform:scale(1.06);box-shadow:0 0 0 3px var(--paper),0 0 0 5px var(--teal)}
+  .ychip .nm{font-size:.68rem;color:var(--muted);text-align:center;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px}
+  .ychip .badge{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;border-radius:99px;background:var(--gold-deep);color:#fff;font-size:.6rem;font-weight:700;display:grid;place-items:center;padding:0 4px;border:2px solid var(--paper)}
+
+  /* ---- bento ---- */
+  .bento{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:82px;grid-auto-flow:dense;gap:10px;margin-top:6px}
+  .prompt{grid-column:span 2;text-align:center;color:var(--faint);font-size:.85rem;padding:34px 20px;border:1.5px dashed var(--border);border-radius:18px}
+  .tile{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:13px 14px;cursor:pointer;overflow:hidden;
+    display:flex;flex-direction:column;box-shadow:0 3px 10px rgba(26,35,35,.05);opacity:0;transform:translateY(-18px);transition:transform .14s, box-shadow .18s}
+  .tile.in{animation:drop .5s cubic-bezier(.22,1,.36,1) forwards}
+  @keyframes drop{to{opacity:1;transform:translateY(0)}}
+  .tile:active{transform:scale(.98)}
+  .tile.wide{grid-column:span 2}
+  .tile.tall{grid-row:span 2}
+  .tile.todo{border-color:var(--todo-line);box-shadow:0 0 0 1px var(--todo-line),0 6px 16px rgba(180,128,46,.14)}
+  .tile.todo:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold-deep)}
+  .tile .tkey{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .tile h3{font-family:var(--head);font-size:.98rem;font-weight:700;margin:3px 0 0}
+  .tile .tline{font-size:.78rem;color:var(--muted);margin-top:4px;line-height:1.3}
+  .tile .spacer{flex:1}
+  .tstat{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:600;margin-top:8px}
+  .tstat .d{width:7px;height:7px;border-radius:50%}
+  .tstat.todo{color:var(--todo)} .tstat.todo .d{background:var(--gold-deep)}
+  .tstat.progress{color:var(--prog)} .tstat.progress .d{background:var(--teal)}
+  .tstat.done{color:var(--done)} .tstat.done .d{background:var(--done)}
+  .miniprog{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:9px}
+  .miniprog i{display:block;height:100%;background:var(--teal)}
+
+  /* ---- sheet (complete a section) ---- */
+  .sheet{position:absolute;inset:0;background:rgba(20,28,28,.4);backdrop-filter:blur(2px);display:none;align-items:flex-end;z-index:12}
+  .sheet.on{display:flex}
+  .sheetcard{width:100%;background:var(--surface);border-radius:26px 26px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .34s cubic-bezier(.22,1,.36,1);max-height:78%;overflow:auto}
+  .sheet.on .sheetcard{transform:none}
+  .sheet h2{font-family:var(--head);font-size:1.2rem;margin:2px 0 2px}
+  .fld{padding:12px 0;border-bottom:1px solid var(--border)}
+  .fld .k{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .fld .v{font-size:.95rem;font-weight:500;margin-top:3px}
+  .btn{width:100%;height:50px;border-radius:14px;border:0;background:var(--teal-deep);color:#fff;font-family:var(--sans);font-weight:700;font-size:1rem;cursor:pointer;margin-top:16px}
+  .btn.ghost{background:transparent;color:var(--muted);height:auto;padding:10px;margin-top:6px;font-weight:600}
+
+  /* ---- admin page ---- */
+  .back{display:inline-flex;align-items:center;gap:5px;background:none;border:0;color:var(--teal-deep);font-weight:600;font-size:.9rem;cursor:pointer;padding:0 0 8px}
+  .ahead{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .ahead .av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--head);font-weight:700}
+  .arow{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .arow .grow{flex:1}
+  .arow .nm{font-weight:600;font-size:.92rem}
+  .arow .mt{font-size:.76rem;color:var(--muted);margin-top:1px}
+  .tabbar{display:flex;justify-content:center;gap:44px;padding:10px 0 22px;border-top:1px solid var(--border);background:rgba(255,255,255,.85);backdrop-filter:blur(10px)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--faint);font-weight:600}
+  .tab.on{color:var(--teal-deep)} .tab svg{width:22px;height:22px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+
+  <!-- ============ HOME ============ -->
+  <div class="screen base" id="home">
+    <div class="statusbar"><span>9:41</span><span>􀙇 􀫮 􀛨</span></div>
+    <div class="body" id="homebody">
+      <div class="orbwrap">
+        <div class="orb" id="orb" onclick="openAdmin()">
+          <svg width="168" height="168" viewBox="0 0 168 168">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5DA1A1"/><stop offset="1" stop-color="#2F6B6B"/></linearGradient></defs>
+            <circle class="ring-bg" cx="84" cy="84" r="76"/>
+            <circle class="ring-fg" id="ring" cx="84" cy="84" r="76" stroke-dasharray="477.5" stroke-dashoffset="477.5"/>
+          </svg>
+          <div class="orbcenter empty" id="orbcenter">
+            <div class="oempty">select a youth<br>to load their toolbox</div>
+          </div>
+        </div>
+        <div class="ohint" id="ohint"></div>
+      </div>
+
+      <div class="striplbl">your caseload · tap a youth</div>
+      <div class="strip" id="strip"></div>
+
+      <div class="bento" id="bento">
+        <div class="prompt">tap a youth above — their record fans out here as a toolbox of what's done and what still needs you.</div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h5"/></svg>Cases</div>
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Overview</div>
+    </div>
+  </div>
+
+  <!-- ============ ADMIN (youth full record) ============ -->
+  <div class="screen" id="admin">
+    <div class="statusbar"><span>9:41</span><span>􀙇 􀫮 􀛨</span></div>
+    <div class="body">
+      <button class="back" onclick="closeAdmin()">‹ toolbox</button>
+      <div class="ahead"><div class="av" id="a-av"></div><div><div style="font-family:var(--head);font-weight:800;font-size:1.3rem" id="a-name"></div><div class="mt" id="a-sub"></div></div></div>
+      <div class="striplbl" style="margin-top:12px">tracked progress · full record</div>
+      <div id="a-rows"></div>
+    </div>
+  </div>
+
+  <!-- ============ COMPLETE SHEET ============ -->
+  <div class="sheet" id="sheet">
+    <div class="sheetcard" id="sheetcard"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var COLORS={emma:'#C0632F',marcus:'#2F6B6B',priya:'#B4802E',deshawn:'#5DA1A1',aaliyah:'#7a5bb0'};
+  // category template — each youth carries a status per category
+  var CATS=[
+    {key:'visit',      label:'Monthly visit note', span:'wide', line:'the mandated home visit',          page:'the contact note'},
+    {key:'education',  label:'Education',           span:'tall', line:'enrollment · attendance · IEP',    page:'education'},
+    {key:'safety',     label:'Safety',              span:'',     line:'concerns · reports',               page:'safety'},
+    {key:'health',     label:'Health',              span:'',     line:'medical · dental · Rx',            page:'health'},
+    {key:'placement',  label:'Placement',           span:'',     line:'stability · caregiver',            page:'placement'},
+    {key:'permanency', label:'Permanency plan',     span:'wide', line:'goal · TPR · timeline',            page:'permanency'},
+    {key:'court',      label:'Court',               span:'',     line:'hearings · orders',                page:'court'},
+    {key:'wellbeing',  label:'Well-being',          span:'',     line:'developmental · emotional',        page:'well-being'},
+  ];
+  // per-youth statuses + the "needs you" detail lines
+  var YOUTHS={
+    emma:   {name:'Emma Sullivan', age:8, sub:'non-relative foster · 1442 Alder St',
+      st:{visit:'todo',education:'todo',safety:'todo',health:'done',placement:'done',permanency:'progress',court:'progress',wellbeing:'done'},
+      note:{visit:'due today · start the note',education:'confirm current-term enrollment',safety:'review flagged report',permanency:'TPR review Sep 12',court:'hearing Aug 14'}},
+    marcus: {name:'Marcus Alvarez', age:14, sub:'kinship placement',
+      st:{visit:'todo',education:'progress',safety:'todo',health:'todo',placement:'progress',permanency:'todo',court:'done',wellbeing:'progress'},
+      note:{visit:'1 day overdue',safety:'prior report — verify',health:'dental follow-up due',permanency:'goal change pending'}},
+    priya:  {name:'Priya Desai', age:6, sub:'non-relative foster',
+      st:{visit:'progress',education:'done',safety:'done',health:'done',placement:'done',permanency:'done',court:'done',wellbeing:'todo'},
+      note:{visit:'due in 2 days',wellbeing:'developmental screen due'}},
+    deshawn:{name:'DeShawn Carter', age:12, sub:'group home',
+      st:{visit:'todo',education:'todo',safety:'progress',health:'done',placement:'todo',permanency:'progress',court:'progress',wellbeing:'done'},
+      note:{visit:'due in 3 days',education:'2 unexcused absences',placement:'requested transfer'}},
+    aaliyah:{name:'Aaliyah Nguyen', age:9, sub:'foster home', safety:true,
+      st:{visit:'done',education:'done',safety:'todo',health:'progress',placement:'done',permanency:'done',court:'done',wellbeing:'done'},
+      note:{safety:'safety flag — review'}},
+  };
+  var STAT={todo:{c:'todo',t:'needs you'},progress:{c:'progress',t:'in progress'},done:{c:'done',t:'up to date'}};
+
+  var CIRC=2*Math.PI*76;
+  var sel=null;
+
+  // ---- youth strip ----
+  var strip=document.getElementById('strip');
+  Object.keys(YOUTHS).forEach(function(id){ var y=YOUTHS[id];
+    var todo=Object.values(y.st).filter(function(s){return s==='todo';}).length;
+    var el=document.createElement('div'); el.className='ychip'; el.id='chip-'+id;
+    el.innerHTML='<div class="av" style="background:'+COLORS[id]+'">'+initials(y.name)+(todo?'<span class="badge">'+todo+'</span>':'')+'</div><div class="nm">'+y.name.split(' ')[0]+'</div>';
+    el.onclick=function(){ select(id); }; strip.appendChild(el);
+  });
+  function initials(n){ return n.split(' ').map(function(w){return w[0];}).slice(0,2).join(''); }
+
+  // ---- select a youth → orb fills + bento slides in ----
+  function select(id){
+    sel=id; var y=YOUTHS[id];
+    document.querySelectorAll('.ychip').forEach(function(c){c.classList.remove('sel');});
+    document.getElementById('chip-'+id).classList.add('sel');
+    // orb
+    var done=Object.values(y.st).filter(function(s){return s==='done';}).length;
+    var pct=Math.round(done/CATS.length*100);
+    document.getElementById('ring').setAttribute('stroke-dashoffset', CIRC*(1-pct/100));
+    document.getElementById('orbcenter').className='orbcenter';
+    document.getElementById('orbcenter').innerHTML='<div class="avatar" style="background:'+COLORS[id]+'">'+initials(y.name)+'</div><div class="oname">'+y.name.split(' ')[0]+'</div><div class="opct">'+pct+'% complete</div>';
+    var todo=Object.values(y.st).filter(function(s){return s==='todo';}).length;
+    document.getElementById('ohint').textContent = todo? (todo+' section'+(todo>1?'s':'')+' need you · tap the ring for the full record') : 'all caught up · tap the ring for the full record';
+    renderBento(id);
+  }
+
+  // ---- bento toolbox ----
+  function renderBento(id){
+    var y=YOUTHS[id], bento=document.getElementById('bento'); bento.innerHTML='';
+    CATS.forEach(function(cat,i){
+      var s=y.st[cat.key], sm=STAT[s];
+      var t=document.createElement('div'); t.className='tile '+(cat.span?cat.span+' ':'')+s;
+      var note=(y.note&&y.note[cat.key])?y.note[cat.key]:cat.line;
+      var prog = s==='done'?100:(s==='progress'?55:12);
+      t.innerHTML='<div class="tkey">'+cat.key+'</div><h3>'+cat.label+'</h3><div class="tline">'+note+'</div><div class="spacer"></div>'+
+        (cat.span==='tall'?'<div class="miniprog"><i style="width:'+prog+'%"></i></div>':'')+
+        '<div class="tstat '+sm.c+'"><span class="d"></span>'+sm.t+(s==='todo'?' →':'')+'</div>';
+      t.style.animationDelay=(i*55)+'ms';
+      t.onclick=function(){ openSheet(id,cat); };
+      bento.appendChild(t);
+      requestAnimationFrame(function(){ t.classList.add('in'); });
+    });
+  }
+
+  // ---- complete a section (sheet) ----
+  function openSheet(id,cat){
+    var y=YOUTHS[id], s=y.st[cat.key];
+    var card=document.getElementById('sheetcard');
+    var fields = s==='done'
+      ? '<div class="fld"><div class="k">status</div><div class="v" style="color:var(--done)">✓ up to date · last updated Jul 28</div></div>'
+      : '<div class="fld"><div class="k">what needs you</div><div class="v">'+((y.note&&y.note[cat.key])||cat.line)+'</div></div>'+
+        '<div class="fld"><div class="k">quick update</div><div class="v" style="color:var(--faint)">tap a value to confirm or change…</div></div>';
+    card.innerHTML='<div class="k" style="font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)">'+cat.key+' · '+y.name.split(' ')[0]+'</div>'+
+      '<h2>'+cat.label+'</h2><div class="tline" style="color:var(--muted);font-size:.85rem;margin-bottom:6px">open '+cat.page+' to finish this</div>'+fields+
+      (s!=='done'?'<button class="btn" onclick="markDone(\''+id+'\',\''+cat.key+'\')">mark up to date</button>':'')+
+      '<button class="btn ghost" onclick="closeSheet()">close</button>';
+    document.getElementById('sheet').classList.add('on');
+  }
+  window.closeSheet=function(){ document.getElementById('sheet').classList.remove('on'); };
+  window.markDone=function(id,key){ YOUTHS[id].st[key]='done'; if(YOUTHS[id].note) delete YOUTHS[id].note[key];
+    closeSheet(); // update badge, orb, bento
+    var todo=Object.values(YOUTHS[id].st).filter(function(s){return s==='todo';}).length;
+    var chip=document.getElementById('chip-'+id).querySelector('.badge'); var av=document.getElementById('chip-'+id).querySelector('.av');
+    if(chip) chip.remove(); if(todo>0){ var b=document.createElement('span'); b.className='badge'; b.textContent=todo; av.appendChild(b); }
+    select(id);
+  };
+
+  // ---- admin (full record) ----
+  window.openAdmin=function(){ if(!sel) return; var y=YOUTHS[sel];
+    document.getElementById('a-av').style.background=COLORS[sel]; document.getElementById('a-av').textContent=initials(y.name);
+    document.getElementById('a-name').textContent=y.name; document.getElementById('a-sub').textContent=y.age+' yrs · '+y.sub;
+    var rows=document.getElementById('a-rows'); rows.innerHTML='';
+    CATS.forEach(function(cat){ var s=y.st[cat.key], sm=STAT[s];
+      var r=document.createElement('div'); r.className='arow';
+      r.innerHTML='<span class="tstat '+sm.c+'" style="margin:0"><span class="d"></span></span><div class="grow"><div class="nm">'+cat.label+'</div><div class="mt">'+((y.note&&y.note[cat.key])||cat.line)+'</div></div><span class="mt" style="color:var(--'+sm.c+')">'+sm.t+'</span>';
+      r.onclick=function(){ closeAdmin(); openSheet(sel,cat); }; rows.appendChild(r);
+    });
+    document.getElementById('admin').classList.add('on');
+  };
+  window.closeAdmin=function(){ document.getElementById('admin').classList.remove('on'); };
+
+  var CATS_line={}; CATS.forEach(function(c){CATS_line[c.key]=c.line;});
+})();
+</script>
+</body>
+</html>

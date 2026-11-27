@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sign in — Fostr</title>
+<link rel="stylesheet" href="tokens.css">
+<style>
+  /* ---- v2 "Brand Split": layout + motion only ---- */
+  .shell {
+    min-height: 100vh; min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+  }
+
+  /* LEFT — teal brand panel, the emotional anchor */
+  .brand {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 12% 8%, color-mix(in srgb, var(--teal) 82%, #fff) 0%, transparent 55%),
+      linear-gradient(160deg, var(--teal) 0%, var(--teal-deep) 78%);
+    color: #fff;
+    padding: clamp(40px, 5vw, 72px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    isolation: isolate;
+  }
+  .brand__top { display: flex; align-items: center; gap: 12px; z-index: 2; }
+  .brand__top .mark { width: 30px; height: 30px; color: #fff; }
+  .brand__word { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+
+  .brand__line {
+    z-index: 2;
+    max-width: 15ch;
+    font-size: clamp(1.5rem, 2.6vw, 2.35rem);
+    font-weight: 600;
+    line-height: 1.22;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .brand__sub {
+    z-index: 2;
+    margin: 18px 0 0;
+    max-width: 32ch;
+    font-size: 0.95rem;
+    color: color-mix(in srgb, #fff 78%, transparent);
+    line-height: 1.55;
+  }
+
+  /* the living sprout — sits in the panel, breathes, draws once */
+  .sprout {
+    position: absolute;
+    right: clamp(-40px, -2vw, 0px);
+    bottom: -6%;
+    width: min(58%, 420px);
+    height: auto;
+    z-index: 0;
+    color: color-mix(in srgb, #fff 30%, transparent);
+    transform-origin: 50% 100%;
+    animation: breathe 7s ease-in-out infinite;
+  }
+  .sprout .stem, .sprout .leaf-line {
+    stroke: color-mix(in srgb, #fff 55%, transparent);
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 620;
+    stroke-dashoffset: 620;
+    animation: draw 2.6s ease-out forwards;
+  }
+  .sprout .leaf-fill {
+    fill: color-mix(in srgb, #fff 12%, transparent);
+    opacity: 0;
+    animation: fade-in 1.4s ease-out 1.8s forwards;
+  }
+  .sprout .leaf-line.b { animation-delay: .55s; }
+
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes fade-in { to { opacity: 1; } }
+  @keyframes breathe {
+    0%, 100% { transform: scale(1) translateY(0); }
+    50% { transform: scale(1.028) translateY(-4px); }
+  }
+
+  /* soft, slow orbit glows — ambient, non-distracting */
+  .brand::before {
+    content: "";
+    position: absolute; z-index: 0;
+    width: 46%; aspect-ratio: 1; border-radius: 50%;
+    top: -12%; left: 32%;
+    background: radial-gradient(circle, color-mix(in srgb,#fff 16%,transparent), transparent 70%);
+    animation: drift 22s ease-in-out infinite;
+  }
+  @keyframes drift {
+    0%,100% { transform: translate(0,0); }
+    50% { transform: translate(-24px, 20px); }
+  }
+
+  /* RIGHT — clean sign-in form on white */
+  .signin {
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(28px, 4vw, 56px);
+  }
+  .form-wrap { width: 100%; max-width: 360px; }
+
+  /* small brand echo — only visible on stacked/phone view */
+  .signin__brand { display: none; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .signin__brand .mark { width: 26px; height: 26px; }
+  .signin__brand .word { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+
+  .signin h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .signin__hint { margin: 0 0 26px; font-size: 0.92rem; }
+
+  .stack > .field { margin-bottom: 16px; }
+
+  /* password field with show/hide toggle */
+  .pw-wrap { position: relative; }
+  .pw-wrap > input { padding-right: 58px; }
+  .pw-toggle {
+    position: absolute; top: 0; right: 0;
+    height: var(--tap); min-width: var(--tap);
+    padding: 0 12px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--teal-deep); font-size: 0.82rem; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 11px;
+  }
+  .pw-toggle:hover { color: var(--teal); }
+
+  .label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .label-row .link { font-size: 0.8rem; }
+
+  /* keep-signed-in row */
+  .remember {
+    display: flex; align-items: center; gap: 10px;
+    margin: 4px 0 22px;
+    font-size: 0.9rem; color: var(--ink-2);
+    cursor: pointer; user-select: none;
+    min-height: 32px;
+  }
+  .remember input {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; margin: 0; flex: none;
+    border: 1.5px solid var(--line); border-radius: 6px; background: #fff;
+    cursor: pointer; position: relative;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .remember input:checked { background: var(--teal); border-color: var(--teal); }
+  .remember input:checked::after {
+    content: ""; position: absolute; inset: 0;
+    background: no-repeat center/12px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  }
+
+  .btn-primary { position: relative; }
+  .btn-primary[aria-busy="true"] { cursor: default; opacity: .92; }
+  .spin {
+    display: none;
+    width: 15px; height: 15px; margin-right: 9px; vertical-align: -2px;
+    border: 2px solid color-mix(in srgb,#fff 40%,transparent);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  .btn-primary[aria-busy="true"] .spin { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .or {
+    display: flex; align-items: center; gap: 14px;
+    margin: 20px 0; color: var(--ink-3); font-size: 0.78rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .or::before, .or::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+
+  .support {
+    margin: 30px 0 0; padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-size: 0.85rem; color: var(--ink-3);
+  }
+
+  /* ---- responsive: collapse to a single stacked column, form first ---- */
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .signin { order: 1; min-height: 100vh; min-height: 100dvh; padding-top: 44px; padding-bottom: 44px; }
+    .brand { order: 2; min-height: 260px; padding: 40px; }
+    .brand__line { font-size: 1.5rem; max-width: 22ch; }
+    .brand__sub { display: none; }
+    .sprout { width: min(48%, 240px); bottom: -14%; }
+    .signin__brand { display: flex; }
+    .form-wrap { max-width: 400px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sprout, .brand::before { animation: none; }
+    .sprout .stem, .sprout .leaf-line { stroke-dashoffset: 0; animation: none; }
+    .sprout .leaf-fill { opacity: 1; animation: none; }
+    .spin { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="shell">
+
+    <!-- LEFT: teal brand panel -->
+    <section class="brand" aria-hidden="true">
+      <div class="brand__top">
+        <svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 21V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 12C12 8.5 9 6 5.5 6C5.5 9.5 8.2 12 12 12Z" fill="currentColor" opacity="0.55"/>
+          <path d="M12 11C12 7 15 4 18.5 4C18.5 8 15.5 11 12 11Z" fill="currentColor"/>
+        </svg>
+        <span class="brand__word">Fostr</span>
+      </div>
+
+      <p class="brand__line">The paperwork stays here, so more of your day can reach a kid.</p>
+      <p class="brand__sub">Your notes, your visits, your record — kept in one place that holds up when it matters.</p>
+
+      <!-- living sprout: draws itself once, then breathes -->
+      <svg class="sprout" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+        <path class="stem" d="M100 190 L100 96"/>
+        <path class="leaf-fill" d="M100 108 C100 74 74 52 40 52 C40 86 66 108 100 108 Z"/>
+        <path class="leaf-line" d="M100 108 C100 74 74 52 40 52 C40 86 66 108 100 108 Z"/>
+        <path class="leaf-fill" d="M100 96 C100 58 128 34 164 34 C164 74 136 96 100 96 Z"/>
+        <path class="leaf-line b" d="M100 96 C100 58 128 34 164 34 C164 74 136 96 100 96 Z"/>
+      </svg>
+    </section>
+
+    <!-- RIGHT: sign-in form -->
+    <section class="signin">
+      <div class="form-wrap">
+        <div class="signin__brand">
+          <svg class="mark brandmark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 12C12 8.5 9 6 5.5 6C5.5 9.5 8.2 12 12 12Z" fill="currentColor" opacity="0.55"/>
+            <path d="M12 11C12 7 15 4 18.5 4C18.5 8 15.5 11 12 11Z" fill="currentColor"/>
+          </svg>
+          <span class="word">Fostr</span>
+        </div>
+
+        <h1>Sign in</h1>
+        <p class="signin__hint muted">Use the account your agency set up for you.</p>
+
+        <form id="loginForm" class="stack" novalidate>
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username"
+                   autocapitalize="none" spellcheck="false" placeholder="j.rivera">
+          </div>
+
+          <div class="field">
+            <div class="label-row">
+              <label for="password">Password</label>
+              <a class="link" href="#" id="forgot">Forgot password?</a>
+            </div>
+            <div class="pw-wrap">
+              <input id="password" name="password" type="password" autocomplete="current-password"
+                     placeholder="Enter your password">
+              <button type="button" class="pw-toggle" id="pwToggle"
+                      aria-pressed="false" aria-controls="password">Show</button>
+            </div>
+          </div>
+
+          <label class="remember" for="remember">
+            <input type="checkbox" id="remember" name="remember">
+            <span>Keep me signed in</span>
+          </label>
+
+          <button type="submit" class="btn-primary" id="submitBtn">
+            <span class="spin" aria-hidden="true"></span><span id="submitLabel">Sign in</span>
+          </button>
+
+          <div class="or">or</div>
+
+          <button type="button" class="btn-ghost" id="ssoBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M8 10V8a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Sign in with agency SSO
+          </button>
+        </form>
+
+        <p class="support">Trouble signing in? Ask your agency admin.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    (function () {
+      // show / hide password
+      var pw = document.getElementById('password');
+      var toggle = document.getElementById('pwToggle');
+      toggle.addEventListener('click', function () {
+        var showing = pw.type === 'text';
+        pw.type = showing ? 'password' : 'text';
+        toggle.textContent = showing ? 'Show' : 'Hide';
+        toggle.setAttribute('aria-pressed', String(!showing));
+        pw.focus();
+      });
+
+      // brief inline "Signing in…" state (visual only, no server)
+      var form = document.getElementById('loginForm');
+      var btn = document.getElementById('submitBtn');
+      var label = document.getElementById('submitLabel');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (btn.getAttribute('aria-busy') === 'true') return;
+        btn.setAttribute('aria-busy', 'true');
+        label.textContent = 'Signing in…';
+        setTimeout(function () {
+          btn.removeAttribute('aria-busy');
+          label.textContent = 'Sign in';
+        }, 1600);
+      });
+
+      document.getElementById('ssoBtn').addEventListener('click', function () {
+        var l = this.querySelector('svg') ? this : this;
+        this.disabled = true;
+        var original = this.childNodes[this.childNodes.length - 1].nodeValue;
+        this.childNodes[this.childNodes.length - 1].nodeValue = ' Opening agency sign-in…';
+        var self = this;
+        setTimeout(function () {
+          self.disabled = false;
+          self.childNodes[self.childNodes.length - 1].nodeValue = ' Sign in with agency SSO';
+        }, 1600);
+      });
+
+      document.getElementById('forgot').addEventListener('click', function (e) { e.preventDefault(); });
+    })();
+  </script>
+</body>
+</html>
